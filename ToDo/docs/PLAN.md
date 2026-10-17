@@ -70,7 +70,7 @@ Layer rule: `app → components → hooks → repositories → services/firebase
 | Web export | `npx expo export --platform web` → output in `dist/`. Files in `public/` are copied into `dist/`. | docs.expo.dev/router/web/static-rendering |
 | Netlify | Build command `npx expo export -p web`, publish directory `dist`. For `web.output: "single"` add `public/_redirects` with `/*    /index.html   200`. For `static` output no redirect is needed, but **dynamic routes such as `[id].tsx` do not work arbitrarily** (need `generateStaticParams`). | docs.expo.dev/guides/publishing-websites, …/static-rendering |
 | Fonts | `npx expo install @expo-google-fonts/sora expo-font expo-splash-screen`; `useFonts({...})` in the root layout; hide splash when loaded. Exact Sora export names must be confirmed in the installed package (`@expo-google-fonts/sora` is at 0.4.2 on npm). | docs.expo.dev/develop/user-interface/fonts |
-| Testing | `npx expo install jest-expo jest @types/jest --dev` (on Windows add `--` before `--dev`), `@testing-library/react-native`; `"jest": {"preset": "jest-expo"}`; test files end in `-test.ts(x)`; `react-test-renderer` is deprecated. Let `expo install` choose the `jest-expo` version (npm latest is 58.x, project is SDK 57). | docs.expo.dev/develop/unit-testing |
+| Testing | `npx expo install jest-expo jest @types/jest --dev` (on Windows add `--` before `--dev`), `@testing-library/react-native`; `"jest": {"preset": "jest-expo"}`; test files end in `-test.ts(x)`. Let `expo install` choose the `jest-expo` version (npm latest is 58.x, project is SDK 57). **SDK 57 correction (found in Phase 2):** Expo Router 57's `renderRouter` renders synchronously, so use `@testing-library/react-native` **13.3** with `react-test-renderer` 19.2.3; RNTL 14 (async render, `test-renderer`) is for SDK 58+. See `decisions.md`. | docs.expo.dev/develop/unit-testing |
 | Local storage | `npx expo install @react-native-async-storage/async-storage`; supports Web; unencrypted, so no secrets. | docs.expo.dev/versions/v57.0.0/sdk/async-storage |
 | Firestore rules | Rules match **documents** (`match /cities/{city}`), wildcards capture the doc id, unmatched paths are denied, and any matching `true` rule grants access. Field validation uses conditions (`request.resource.data`) — the structure page does not cover it; read the conditions guide in Phase 4. | firebase.google.com/docs/firestore/security/rules-structure |
 | Existing project | Expo 57.0.30, React 19.2.3, RN 0.86.3, Expo Router 57, React Compiler + typed routes on, `web.output: "static"`, `@/*` → `src/*`. Template files to replace: `src/app/index.tsx`, `explore.tsx`, `components/app-tabs*.tsx`, `animated-icon*`, `hint-row`, `web-badge`, `ui/collapsible`. | repo |
@@ -151,6 +151,8 @@ Layer rule: `app → components → hooks → repositories → services/firebase
 ---
 
 ## Phase 2 — Foundations: tooling, folders, theme, empty 3-tab shell
+
+> **Status: done 2026-10-18.** Typecheck, lint and 9 tests pass; verified in the browser at 390 px and 1280 px. Decisions and deviations: `decisions.md` ("Phase 2"). Not yet committed.
 
 **How this serves the primary goal:** every later screen needs the same test setup, folder rules, design tokens and navigation frame; doing it once keeps the rest consistent.
 
