@@ -26,6 +26,7 @@ export const Colors = {
   onPrimaryContainer: '#fffbff',
   inversePrimary: '#ffb1c0',
   primaryFixed: '#ffd9df',
+  onPrimaryFixedVariant: '#90003d',
   secondary: '#00696b',
   onSecondary: '#ffffff',
   secondaryContainer: '#53f9fb',

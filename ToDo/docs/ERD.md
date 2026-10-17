@@ -122,4 +122,4 @@ users/{username}/tasks/{taskId}/subtasks/{subtaskId}
 4. **No authentication means no per-user data protection.** Anyone who knows a username can open that list, and Firestore rules cannot tell callers apart. Accepted for this scope; the rules still enforce the data shape and size.
 5. **Fields in the mockups with no ERD field** (not built): sprint / team name, human task code (`TSK-0842`, shown instead as a short id), meeting link ("Google Meet"), PR number, "velocity" and "+1 since yesterday" figures.
 
-Still open: 4 only (accepted risk, default applies). 1, 2, 3 and 5 are settled.
+All five points are settled (4 is an accepted risk).

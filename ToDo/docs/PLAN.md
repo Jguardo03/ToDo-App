@@ -179,6 +179,8 @@ Layer rule: `app → components → hooks → repositories → services/firebase
 
 ## Phase 3 — Data contract: corrected ERD → TypeScript domain
 
+> **Status: done 2026-10-18.** 60 new unit tests (69 in total) pass; typecheck and lint clean. Decisions: `decisions.md` ("Phase 3"). Not yet committed.
+
 **How this serves the primary goal:** one agreed data model means the database layer and the screens cannot drift apart.
 
 **What to implement:**
