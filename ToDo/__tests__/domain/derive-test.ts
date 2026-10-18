@@ -3,11 +3,15 @@ import { makeTask, minutesFromNow, NOW } from '../../config/jest/factories';
 import {
   applyStatus,
   categoryStats,
+  completionRate,
+  countRemaining,
   counterDelta,
   displayStatus,
   isOverdue,
   progress,
   progressPercent,
+  selectDueToday,
+  sortByPriority,
   statusCounts,
 } from '@/domain/derive';
 
@@ -136,5 +140,44 @@ describe('counterDelta', () => {
     expect(counterDelta({ status: 'done' }, { status: 'in_process' })).toEqual({ total: 0, done: -1 });
     expect(counterDelta({ status: 'done' }, { status: 'done' })).toEqual({ total: 0, done: 0 });
     expect(counterDelta({ status: 'pending' }, { status: 'in_process' })).toEqual({ total: 0, done: 0 });
+  });
+});
+
+describe('Home helpers', () => {
+  const at = (hours: number, minutes = 0, dayOffset = 0) => new Date(2026, 9, 18 + dayOffset, hours, minutes);
+
+  it('selectDueToday keeps only today (any status), soonest first, without changing the input', () => {
+    const input = [
+      makeTask({ id: 'late', dueAt: at(18) }),
+      makeTask({ id: 'yesterday', dueAt: at(23, 59, -1) }),
+      makeTask({ id: 'tomorrow', dueAt: at(0, 0, 1) }),
+      makeTask({ id: 'early', dueAt: at(9), status: 'done' }),
+      makeTask({ id: 'midnight', dueAt: at(0, 0) }),
+    ];
+    const copy = [...input];
+    expect(selectDueToday(input, NOW).map((t) => t.id)).toEqual(['midnight', 'early', 'late']);
+    expect(input).toEqual(copy);
+  });
+
+  it('countRemaining counts tasks that are not done', () => {
+    expect(countRemaining([{ status: 'done' }, { status: 'pending' }, { status: 'in_process' }])).toBe(2);
+    expect(countRemaining([])).toBe(0);
+  });
+
+  it('sortByPriority puts urgent first and keeps soonest-due order within a level', () => {
+    const input = [
+      makeTask({ id: 'low', priority: 'low', dueAt: at(9) }),
+      makeTask({ id: 'high-late', priority: 'high', dueAt: at(18) }),
+      makeTask({ id: 'urgent', priority: 'urgent', dueAt: at(20) }),
+      makeTask({ id: 'high-early', priority: 'high', dueAt: at(10) }),
+    ];
+    expect(sortByPriority(input).map((t) => t.id)).toEqual(['urgent', 'high-early', 'high-late', 'low']);
+    expect(input.map((t) => t.id)).toEqual(['low', 'high-late', 'urgent', 'high-early']);
+  });
+
+  it('completionRate is done / all as a whole percent, 0 when empty', () => {
+    expect(completionRate([])).toBe(0);
+    expect(completionRate([{ status: 'done' }, { status: 'pending' }, { status: 'pending' }])).toBe(33);
+    expect(completionRate([{ status: 'done' }])).toBe(100);
   });
 });

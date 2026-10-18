@@ -10,6 +10,7 @@ import CalendarScreen from '@/app/(tabs)/calendar';
 import CategoriesScreen from '@/app/(tabs)/categories';
 import HomeScreen from '@/app/(tabs)/index';
 import NewTaskScreen from '@/app/task/new';
+import StatusScreen from '@/app/status/[status]';
 import { RootNavigator } from '@/components/layout/root-navigator';
 import { createMemoryRepositories } from '@/repositories/memory/memory-repositories';
 import type { StoredSession } from '@/services/session-storage';
@@ -27,6 +28,7 @@ function routes(options: { initial?: StoredSession; storage?: ReturnType<typeof 
     '(tabs)/calendar': CalendarScreen,
     '(tabs)/categories': CategoriesScreen,
     'task/new': NewTaskScreen,
+    'status/[status]': StatusScreen,
   };
 }
 
@@ -45,7 +47,7 @@ describe('route guard', () => {
     setWindowWidth(390);
     renderRouter(routes({ initial: { username: 'rune_dev', recent: ['rune_dev'] } }), { initialUrl: '/sign-in' });
     await waitFor(() => expect(screen).not.toHavePathname('/sign-in'));
-    expect(screen.getByRole('header', { name: 'Home' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: "Today's Focus" })).toBeOnTheScreen();
   });
 
   it('lets a new user create a list and lands on Home', async () => {
@@ -61,7 +63,7 @@ describe('route guard', () => {
     });
 
     await waitFor(() => expect(screen).toHavePathname('/'));
-    expect(screen.getByRole('header', { name: 'Home' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: "Today's Focus" })).toBeOnTheScreen();
     expect(await repositories.users.exists('rune_dev')).toBe(true);
     expect(current()).toEqual({ username: 'rune_dev', recent: ['rune_dev'] });
   });

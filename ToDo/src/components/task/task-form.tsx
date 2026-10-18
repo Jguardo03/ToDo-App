@@ -13,17 +13,19 @@ import { TextArea, TextField } from '@/components/ui/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { DEFAULT_PRIORITY } from '@/constants/priorities';
 import { Spacing } from '@/constants/theme';
-import type { Category, NewSubtask, NewTask, PriorityKey } from '@/domain/types';
+import type { Category, NewSubtask, NewTask, NewTaskDraft, PriorityKey } from '@/domain/types';
 import { validateNewSubtask, validateNewTask, type FieldErrors } from '@/domain/validation';
 import { defaultDueAt } from '@/utils/dates';
 
-export type TaskFormValues = { task: NewTask; subtasks: NewSubtask[] };
+export type TaskFormValues = NewTaskDraft;
 
 type TaskFormProps = {
   categories: readonly Category[];
   now: Date;
   /** Pre-selected category (for example when opened from a category screen). */
   initialCategoryId?: string;
+  /** Selects this category when it changes, for example the one just created from the "New" pill. */
+  requestedCategoryId?: string;
   /** Pre-filled due date-time (for example the day selected in the Calendar). */
   initialDueAt?: Date;
   title?: string;
@@ -41,6 +43,7 @@ export function TaskForm({
   categories,
   now,
   initialCategoryId,
+  requestedCategoryId,
   initialDueAt,
   title = 'New Task',
   submitLabel = 'Create Task',
@@ -54,6 +57,11 @@ export function TaskForm({
   const [dueAt, setDueAt] = useState<Date | undefined>(initialDueAt ?? defaultDueAt(now));
   const [categoryId, setCategoryId] = useState(initialCategoryId ?? categories[0]?.id ?? '');
   const [priority, setPriority] = useState<PriorityKey>(DEFAULT_PRIORITY);
+  const [appliedRequest, setAppliedRequest] = useState(requestedCategoryId);
+  if (requestedCategoryId !== appliedRequest) {
+    setAppliedRequest(requestedCategoryId);
+    if (requestedCategoryId) setCategoryId(requestedCategoryId);
+  }
   const [drafts, setDrafts] = useState<SubtaskDraft[]>([]);
   const [nextKey, setNextKey] = useState(1);
   const [errors, setErrors] = useState<FieldErrors<NewTask>>({});

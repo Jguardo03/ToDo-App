@@ -286,6 +286,8 @@ Layer rule: `app → components → hooks → repositories → services/firebase
 
 ## Phase 7 — Home screen and Add Task
 
+> **Status: done 2026-10-18.** Home (phone and desktop), the Add Task flow with an in-form category sheet, data hooks, and a placeholder status page. 261 tests pass (49 new); checked in the browser against the real Firebase project (new user, new category, task with subtask, tick to done), then the test user was deleted. Decisions: `decisions.md` ("Phase 7"). Not yet committed.
+
 **How this serves the primary goal:** Home is where users see what is due; Add Task is how data gets in. Together they make the app usable for the first time.
 
 **What to implement:**

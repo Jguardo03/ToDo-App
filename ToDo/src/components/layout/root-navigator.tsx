@@ -16,6 +16,7 @@ export function RootNavigator() {
       <Stack.Protected guard={signedIn}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="task/new" />
+        <Stack.Screen name="status/[status]" />
       </Stack.Protected>
     </Stack>
   );

@@ -10,6 +10,7 @@ import CalendarScreen from '@/app/(tabs)/calendar';
 import CategoriesScreen from '@/app/(tabs)/categories';
 import HomeScreen from '@/app/(tabs)/index';
 import NewTaskScreen from '@/app/task/new';
+import StatusScreen from '@/app/status/[status]';
 
 const routes = {
   _layout: makeTestRoot({ initial: { username: 'rune_dev', recent: [] }, children: () => <Slot /> }),
@@ -18,6 +19,7 @@ const routes = {
   '(tabs)/calendar': CalendarScreen,
   '(tabs)/categories': CategoriesScreen,
   'task/new': NewTaskScreen,
+  'status/[status]': StatusScreen,
 };
 
 function setWindowWidth(width: number) {
@@ -35,7 +37,7 @@ describe('app shell', () => {
     setWindowWidth(390);
     renderRouter(routes, { initialUrl: '/' });
 
-    expect(screen.getByRole('header', { name: 'Home' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: "Today's Focus" })).toBeOnTheScreen();
     expect(screen.getAllByRole('tab').map((tab) => tab.props.accessibilityLabel)).toEqual([
       'Home',
       'Calendar',

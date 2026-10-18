@@ -124,6 +124,26 @@ Newest first inside each section. Each entry says what was decided, why, and whe
 | **Known gap:** on a phone with a notch, the account bar and each screen both add the top safe-area inset | Web is the target and has no inset; fix when the Home header replaces the bar |
 | **Brand "ToDo"** on the sign-in screen, not "TaskFlow / Sync Engine" | See Phase 2 |
 
+### Phase 7 — Home and Add Task (2026-10-18)
+
+| Decision | Why |
+|---|---|
+| **Screens read data through hooks, not repositories:** `useTasks`, `useCategories` (live lists via `useLiveList`), `useTaskActions` (create task + subtasks, set status, create category), `useNow` (clock refreshed every minute), `useUsername` | One place per concern; screens stay thin and testable with in-memory repositories. Home updates by itself when data changes |
+| **`HomeContent` is a pure component** (data and actions in as props); `app/(tabs)/index.tsx` only wires hooks to it | Layouts and rules are tested without a database |
+| **"Due Today" = tasks whose due time falls on today, any status.** Overdue tasks from earlier days appear only in the Overdue count and its list | Mockup: "Due Today" lists today; overdue is a state card |
+| **Ticking a task sets it to `done`; unticking sets it to `pending`** (not back to `in_process`) | We do not store the earlier status; pending is the neutral choice |
+| **Stat cards: Overdue / In Process / Completed / Pending**, each counting by displayed status (an overdue task counts only as overdue). On desktop "Completed" shows the completion rate | ERD: derived values only; the mockup's "+1 since yesterday" and "velocity" are not stored |
+| **Stat cards open `/status/<status>`**, which is a placeholder page until Phase 8 | So the cards already navigate; the list itself belongs to Phase 8 |
+| **Desktop-only extras on Home:** Priority sort, category filter, Quick add, Today's Schedule (with "Current" badge when now is inside a task's start-to-due range) | Matches the updated `home` mockup |
+| **Task rows are not yet pressable.** Opening a task arrives with the task screen in Phase 8 | Avoids links to pages that do not exist |
+| **New task form: after saving it goes back to the previous screen** (Home keeps its place); opened directly it goes to Home | Replacing with Home stacked a second Home screen (found in the browser: duplicate controls) |
+| **"New" category pill opens a sheet; the new category is selected automatically** (`requestedCategoryId` on the form) | One flow, no leaving the form |
+| **`/task/new?categoryId=<id>&date=YYYY-MM-DD` pre-fills the form** (date at 17:00) | For "Add Task to Category" (Phase 9) and "Fast Book" (Phase 10) |
+| **A task is saved first, then its subtasks one by one.** If a subtask fails you are told "The task was saved, but a subtask was not: ..." | Firestore has no multi-document save in our repository API; the task is the important part and stays visible. Retrying would duplicate the task, so it is not offered |
+| **Failures are shown in words** (`userMessage`): loading errors as a banner on Home, saving errors under the form, a failed tick as a banner with the task left unchanged | No raw errors reach the screen |
+| **In-memory ids sort in creation order** (a counter follows the timestamp) | Subtasks created in the same millisecond must keep their order in tests; real Firestore ids differ in time anyway |
+| **`npm run typecheck` deletes the generated route types first** | A running dev server regenerates `.expo/types/router.d.ts` with bad entries and caused false errors |
+
 ### Open for later phases
 
 | Topic | Phase |

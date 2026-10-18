@@ -3,7 +3,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { useRepositories } from '@/context/repositories';
 import { rememberUsername } from '@/domain/session';
 import { validateUsername } from '@/domain/validation';
-import { RepositoryError } from '@/repositories/errors';
+import { userMessage } from '@/repositories/messages';
 import { createAsyncSessionStorage, type SessionStorage, type StoredSession } from '@/services/session-storage';
 
 export type SessionStatus = 'loading' | 'signed-out' | 'signed-in';
@@ -30,22 +30,6 @@ type SessionProviderProps = {
   /** Start with this session instead of reading storage (tests). */
   initial?: StoredSession;
 };
-
-function errorMessage(error: unknown): string {
-  if (error instanceof RepositoryError) {
-    switch (error.code) {
-      case 'already-exists':
-        return 'That username is taken. Choose Returning User if it is yours.';
-      case 'unavailable':
-        return 'Could not reach the database. Check your connection and try again.';
-      case 'permission-denied':
-        return 'The database refused the request. Please try again later.';
-      case 'invalid':
-        return error.message;
-    }
-  }
-  return 'Something went wrong. Please try again.';
-}
 
 /** Who is using the app: the username (no password), remembered on this device. */
 export function SessionProvider({ children, storage = defaultStorage, initial }: SessionProviderProps) {
@@ -86,7 +70,7 @@ export function SessionProvider({ children, storage = defaultStorage, initial }:
           await users.touch(name);
         }
       } catch (error) {
-        return { ok: false, error: errorMessage(error) };
+        return { ok: false, error: userMessage(error) };
       }
 
       const nextRecent = rememberUsername(recent, name);
@@ -117,4 +101,11 @@ export function useSession(): SessionValue {
   const session = useContext(SessionContext);
   if (!session) throw new Error('useSession must be used inside a SessionProvider.');
   return session;
+}
+
+/** The signed-in username. Only for screens inside the signed-in part of the app. */
+export function useUsername(): string {
+  const { username } = useSession();
+  if (!username) throw new Error('useUsername was used while signed out.');
+  return username;
 }

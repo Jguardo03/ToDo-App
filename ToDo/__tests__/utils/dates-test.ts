@@ -6,6 +6,8 @@ import {
   endOfDay,
   formatDateTime,
   formatDueLabel,
+  formatLongDate,
+  formatTimeRange,
   formatRelativeDay,
   formatTime,
   isSameDay,
@@ -91,5 +93,17 @@ describe('withAlpha', () => {
     expect(withAlpha('#b7004f', 0)).toBe('#b7004f00');
     expect(withAlpha('#b7004f', 0.14)).toBe('#b7004f24');
     expect(withAlpha('#b7004f', 5)).toBe('#b7004fff');
+  });
+});
+
+describe('Home date text', () => {
+  it('writes the long date', () => {
+    expect(formatLongDate(new Date(2026, 9, 18))).toBe('Sunday, Oct 18');
+    expect(formatLongDate(new Date(2024, 0, 17))).toBe('Wednesday, Jan 17');
+  });
+
+  it('writes a time range, or just the due time without a start', () => {
+    expect(formatTimeRange(new Date(2026, 9, 18, 10, 15), new Date(2026, 9, 18, 11, 30))).toBe('10:15 AM - 11:30 AM');
+    expect(formatTimeRange(undefined, new Date(2026, 9, 18, 14, 0))).toBe('2:00 PM');
   });
 });

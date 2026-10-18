@@ -96,3 +96,15 @@ export function defaultDueAt(now: Date): Date {
   if (today.getTime() > now.getTime()) return today;
   return new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 9, 0, 0, 0);
 }
+
+const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+/** "Wednesday, Oct 18" */
+export function formatLongDate(date: Date): string {
+  return `${WEEKDAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}`;
+}
+
+/** "10:15 AM - 11:30 AM" with a start, or just "10:15 AM" without one. */
+export function formatTimeRange(start: Date | undefined, end: Date): string {
+  return start ? `${formatTime(start)} - ${formatTime(end)}` : formatTime(end);
+}

@@ -110,3 +110,9 @@ export type SubtaskPatch = {
   priority?: PriorityKey;
   dueAt?: Date;
 };
+
+/** What the "new task" form produces: the task and any subtasks entered with it. */
+export interface NewTaskDraft {
+  task: NewTask;
+  subtasks: NewSubtask[];
+}

@@ -51,7 +51,7 @@
     "lint": "expo lint",
     "test": "jest",
     "test:watch": "jest --watchAll",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "node -e \"require('fs').rmSync('.expo/types/router.d.ts',{force:true})\" && tsc --noEmit",
     "db:smoke": "node --env-file=.env.local --import tsx scripts/db-smoke.ts",
     "test:firestore": "node --env-file=.env.local node_modules/jest/bin/jest.js --config config/jest/firestore.jest.config.js",
     "db:cleanup": "node --env-file=.env.local --import tsx scripts/db-cleanup.ts"

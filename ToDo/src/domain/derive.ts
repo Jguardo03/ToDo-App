@@ -3,7 +3,9 @@
  * Every function takes `now` as a parameter, so tests need no fake clock.
  */
 
+import { PRIORITIES } from '@/constants/priorities';
 import type { DisplayStatusKey, StatusKey, Subtask, Task } from '@/domain/types';
+import { isSameDay } from '@/utils/dates';
 
 type WithDue = Pick<Task, 'status' | 'dueAt'>;
 
@@ -98,4 +100,27 @@ export function counterDelta(
 
 function clamp01(value: number): number {
   return Math.min(1, Math.max(0, value));
+}
+
+/** Tasks whose due date-time falls on the local calendar day of `now`, soonest first. Any status. */
+export function selectDueToday(tasks: readonly Task[], now: Date): Task[] {
+  return tasks.filter((task) => isSameDay(task.dueAt, now)).sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
+}
+
+/** How many of the given tasks are not done yet ("12 tasks remaining"). */
+export function countRemaining(tasks: readonly Pick<Task, 'status'>[]): number {
+  return tasks.filter((task) => task.status !== 'done').length;
+}
+
+/** Most important first (urgent to low); ties keep soonest-due first. Does not change the input. */
+export function sortByPriority(tasks: readonly Task[]): Task[] {
+  return [...tasks].sort(
+    (a, b) => PRIORITIES[b.priority].rank - PRIORITIES[a.priority].rank || a.dueAt.getTime() - b.dueAt.getTime(),
+  );
+}
+
+/** Completion rate as a whole percent: done tasks out of all tasks (0 when there are none). */
+export function completionRate(tasks: readonly Pick<Task, 'status'>[]): number {
+  if (tasks.length === 0) return 0;
+  return Math.round((tasks.filter((task) => task.status === 'done').length / tasks.length) * 100);
 }
