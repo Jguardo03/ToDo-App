@@ -1,9 +1,11 @@
 import { TabList, TabSlot, TabTrigger, Tabs } from 'expo-router/ui';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BottomDock } from '@/components/layout/bottom-dock';
 import { NAV_ITEMS } from '@/components/layout/nav-items';
 import { SideNav } from '@/components/layout/side-nav';
+import { AccountBar } from '@/components/session/account-bar';
 import { Colors, Layout } from '@/constants/theme';
 
 /**
@@ -26,6 +28,11 @@ export default function AppTabs() {
       <View style={[styles.root, isDesktop && styles.rootDesktop]}>
         {isDesktop && <SideNav />}
         <View style={styles.content}>
+          {isDesktop ? null : (
+            <SafeAreaView edges={['top']} style={styles.account}>
+              <AccountBar variant="bar" />
+            </SafeAreaView>
+          )}
           <TabSlot style={styles.slot} />
         </View>
         {!isDesktop && <BottomDock />}
@@ -47,6 +54,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  account: {
+    backgroundColor: Colors.background,
   },
   slot: {
     flex: 1,

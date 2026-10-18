@@ -262,6 +262,8 @@ Layer rule: `app → components → hooks → repositories → services/firebase
 
 ## Phase 6 — Username session, sign-in screen, and first Netlify deploy
 
+> **Status: code done 2026-10-18; the Netlify deploy is yours.** Config committed in `532091f`. Sign-in, session, route guard and sign-out are built and tested (212 tests); checked in the browser against the real Firebase project. Remaining: push to GitHub, create the Netlify site with the three environment variables, and check `/calendar` refreshes without a 404 on the live URL. Not yet committed (sign-in code).
+
 **How this serves the primary goal:** this is the "access your list by a unique username" requirement, and deploying now proves the whole chain (Expo → Firebase → Netlify) before the feature screens exist.
 
 **What to implement:**

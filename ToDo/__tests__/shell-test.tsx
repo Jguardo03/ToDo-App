@@ -1,6 +1,9 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react-native';
+import { Slot } from 'expo-router';
 import { renderRouter } from 'expo-router/testing-library';
 import { Dimensions } from 'react-native';
+
+import { makeTestRoot } from '../config/jest/session-helpers';
 
 import TabsLayout from '@/app/(tabs)/_layout';
 import CalendarScreen from '@/app/(tabs)/calendar';
@@ -9,6 +12,7 @@ import HomeScreen from '@/app/(tabs)/index';
 import NewTaskScreen from '@/app/task/new';
 
 const routes = {
+  _layout: makeTestRoot({ initial: { username: 'rune_dev', recent: [] }, children: () => <Slot /> }),
   '(tabs)/_layout': TabsLayout,
   '(tabs)/index': HomeScreen,
   '(tabs)/calendar': CalendarScreen,

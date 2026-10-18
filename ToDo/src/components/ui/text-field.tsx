@@ -17,6 +17,8 @@ type BaseProps = Omit<TextInputProps, 'style' | 'onChange' | 'value' | 'onChange
 type TextFieldProps = BaseProps & {
   /** Icon at the right edge (for example a pencil). */
   icon?: IconName;
+  /** Fixed text before the input, such as "@" for a username. */
+  prefix?: string;
 };
 
 type TextAreaProps = BaseProps & {
@@ -25,13 +27,18 @@ type TextAreaProps = BaseProps & {
   rows?: number;
 };
 
-export function TextField({ label, error, icon, value, onChangeText, ...rest }: TextFieldProps) {
+export function TextField({ label, error, icon, prefix, value, onChangeText, ...rest }: TextFieldProps) {
   const [focused, setFocused] = useState(false);
 
   return (
     <View style={styles.group}>
       {label ? <ThemedText variant="labelMd">{label}</ThemedText> : null}
       <View style={[styles.box, styles.row, focused && styles.focused, error ? styles.invalid : null]}>
+        {prefix ? (
+          <ThemedText variant="headlineSm" color="outline" style={styles.prefix}>
+            {prefix}
+          </ThemedText>
+        ) : null}
         <TextInput
           {...rest}
           accessibilityLabel={rest.accessibilityLabel ?? label}
@@ -127,6 +134,9 @@ const styles = StyleSheet.create({
   },
   area: {
     paddingTop: Spacing.md,
+  },
+  prefix: {
+    paddingLeft: Spacing.md,
   },
   footer: {
     paddingHorizontal: Spacing.md,

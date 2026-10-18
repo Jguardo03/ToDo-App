@@ -5,10 +5,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { NAV_ITEMS, NEW_TASK_HREF } from '@/components/layout/nav-items';
 import { NavButton } from '@/components/layout/nav-button';
+import { AccountBar } from '@/components/session/account-bar';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Layout, Radius, Spacing } from '@/constants/theme';
 
-/** Desktop navigation (mockups: home, calendar, categories). The user footer arrives with the session in Phase 6. */
+/** Desktop navigation (mockups: home, calendar, categories) with the signed-in user and sign-out at the bottom. */
 export function SideNav() {
   return (
     <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
@@ -31,6 +32,10 @@ export function SideNav() {
           </TabTrigger>
         ))}
       </View>
+
+      <View style={styles.footer}>
+        <AccountBar />
+      </View>
     </SafeAreaView>
   );
 }
@@ -51,5 +56,8 @@ const styles = StyleSheet.create({
   },
   items: {
     gap: Spacing.xs,
+  },
+  footer: {
+    marginTop: 'auto',
   },
 });

@@ -106,6 +106,24 @@ Newest first inside each section. Each entry says what was decided, why, and whe
 | **Jest mocks `expo-symbols`** (`config/jest/setup.ts`) | The native icon module does not exist in Jest; icons are decorative |
 | **Typed inputs expose an accessible name:** `TextField` / `TextArea` use their `label` as the accessible name unless one is given | Found by a test: spreading props after the label had erased it |
 
+### Phase 6 — username session, sign-in, Netlify (2026-10-18)
+
+| Decision | Why |
+|---|---|
+| **Web output is `single`, not `static`**, with `public/_redirects` (`/*  /index.html  200`) and the same rule in `netlify.toml` | Task and category pages are addressed by ids created at runtime; a static export cannot pre-render them. Verified: `expo export` produces `dist/index.html` and `dist/_redirects` |
+| **`netlify.toml` at the repository root with `base = "ToDo"`**, build `npx expo export --platform web`, publish `dist`, `NODE_VERSION = "22"` | The app lives in the `ToDo/` folder of the repo; with `base` in the file the Netlify UI needs no build settings. Node 22 is what this project runs locally |
+| **Firebase settings come from Netlify environment variables** (`EXPO_PUBLIC_FIREBASE_API_KEY / PROJECT_ID / APP_ID`). Verified: the production bundle contains the project id when they are set at build time | Expo inlines `EXPO_PUBLIC_*` values while building; they are public identifiers by design |
+| **Netlify secrets scan is told to skip the three Firebase keys** (`SECRETS_SCAN_OMIT_KEYS` in `netlify.toml`); scanning stays on for everything else. The first deploy failed because the scan found the project id in the repo (`.firebaserc`, docs) and the values in the bundle | They are public identifiers, inlined into the client bundle by design. Do not tick "Contains secret values" for them, and never set `SECRETS_SCAN_ENABLED=false` |
+| **Session = username only.** Stored in browser storage (`AsyncStorage`, key `todo.session.v1`) as `{username, recent[]}`; corrupt or tampered data reads as signed out | No accounts or passwords, per the brief |
+| **Returning User opens an existing list (and records the visit); New User creates one.** A taken or unknown handle is an error message, never a silent switch | Matches the sign-in mockup; avoids two people unknowingly sharing a list by mistake |
+| **The sign-in screen says plainly that a handle is not a password** and anyone who knows it can open that list | Honest about the accepted risk (ERD open point 4) |
+| **Route guard with `Stack.Protected`** (`components/layout/root-navigator.tsx`): signed out sees only `sign-in`; signed in sees the tabs and `task/new`. Verified in tests and in the browser against the real project | The documented Expo Router mechanism; deep links such as `/calendar` redirect to sign-in when signed out |
+| **Providers: `RepositoriesProvider` then `SessionProvider`** in the root layout. Tests pass in-memory repositories and a fake storage | The data layer is chosen in one place |
+| **Recent handles: the last 5**, newest first, shown as chips on the sign-in screen | Mockup: "Previously active on this device". It lists handles only, not task counts (counting needs the signed-in data) |
+| **Sign-out lives in the desktop side nav footer and in a slim bar above phone screens** (`AccountBar`) | The Home header in the mockup is built in Phase 7; this bar can move into it |
+| **Known gap:** on a phone with a notch, the account bar and each screen both add the top safe-area inset | Web is the target and has no inset; fix when the Home header replaces the bar |
+| **Brand "ToDo"** on the sign-in screen, not "TaskFlow / Sync Engine" | See Phase 2 |
+
 ### Open for later phases
 
 | Topic | Phase |
