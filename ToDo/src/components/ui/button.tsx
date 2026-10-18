@@ -4,7 +4,7 @@ import { Icon, type IconName } from '@/components/ui/icon';
 import { ThemedText } from '@/components/themed-text';
 import { Colors, Layout, Radius, Spacing, type ThemeColor } from '@/constants/theme';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger';
 
 type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
   label: string;
@@ -19,6 +19,7 @@ const VARIANTS: Record<ButtonVariant, { background: string; foreground: ThemeCol
   primary: { background: Colors.primary, foreground: 'onPrimary' },
   secondary: { background: Colors.surfaceContainerHigh, foreground: 'onSurface' },
   ghost: { background: 'transparent', foreground: 'onSurface' },
+  danger: { background: Colors.errorContainer, foreground: 'onErrorContainer' },
 };
 
 export function Button({

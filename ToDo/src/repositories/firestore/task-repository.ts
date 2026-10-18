@@ -130,7 +130,21 @@ export function createTaskRepository(db: Firestore, options: RepositoryOptions =
         else if (patch.startAt) changes.startAt = toTimestamp(patch.startAt);
         const ref = taskRef(db, username, id);
         await requireExisting(ref, 'Task');
-        await updateDoc(ref, changes);
+        if (patch.dueAt === undefined) {
+          await updateDoc(ref, changes);
+          return;
+        }
+        // A subtask may not be due after its task: moving the task earlier moves later subtasks with it,
+        // in the same batch so the two never disagree. (Range filter on one field: automatic index.)
+        const later = await getDocs(
+          query(subtasksCol(db, username, id), where('dueAt', '>', toTimestamp(patch.dueAt))),
+        );
+        const batch = writeBatch(db);
+        batch.update(ref, changes);
+        for (const subtask of later.docs) {
+          batch.update(subtask.ref, { dueAt: toTimestamp(patch.dueAt), updatedAt: changes.updatedAt });
+        }
+        await batch.commit();
       }),
 
     setStatus: (username, id, status) =>

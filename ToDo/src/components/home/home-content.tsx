@@ -24,6 +24,7 @@ type HomeContentProps = {
   /** A message when loading failed. */
   error?: string;
   onToggleDone: (task: Task, done: boolean) => void;
+  onOpenTask: (task: Task) => void;
   onQuickAdd: (task: NewTask) => void | Promise<void>;
   onAddTask: () => void;
   onBrowseCategories: () => void;
@@ -45,6 +46,7 @@ export function HomeContent({
   loading,
   error,
   onToggleDone,
+  onOpenTask,
   onQuickAdd,
   onAddTask,
   onBrowseCategories,
@@ -129,6 +131,7 @@ export function HomeContent({
             task={task}
             category={categoryById.get(task.categoryId)}
             now={now}
+            onPress={() => onOpenTask(task)}
             onToggleDone={(done) => onToggleDone(task, done)}
           />
         ))

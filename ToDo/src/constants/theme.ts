@@ -128,6 +128,8 @@ export const Layout = {
   mobileMaxWidth: 480,
   sideNavWidth: 280,
   contentMaxWidth: 1280,
+  /** Width of single-item pages such as a task. */
+  detailMaxWidth: 720,
   /** Mockup requires 48px touch targets. */
   minTouchTarget: 48,
 } as const;

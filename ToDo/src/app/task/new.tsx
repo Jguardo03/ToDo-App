@@ -8,6 +8,7 @@ import { TaskForm } from '@/components/task/task-form';
 import { BottomSheet } from '@/components/ui/bottom-sheet';
 import { ErrorBanner } from '@/components/ui/error-banner';
 import { Colors, Spacing } from '@/constants/theme';
+import { isStatusKey } from '@/constants/statuses';
 import type { NewCategory, NewTaskDraft } from '@/domain/types';
 import { useCategories } from '@/hooks/use-categories';
 import { useNow } from '@/hooks/use-now';
@@ -17,10 +18,11 @@ import { parseDateTimeInput } from '@/utils/dates';
 
 /**
  * Create a task. Optional address parameters pre-fill the form:
- * `?categoryId=<id>` selects a category, `?date=YYYY-MM-DD` sets the due day (at 17:00).
+ * `?categoryId=<id>` selects a category, `?date=YYYY-MM-DD` sets the due day (at 17:00),
+ * `?status=pending|in_process|done` sets the status the new task starts with.
  */
 export default function NewTaskScreen() {
-  const { categoryId, date } = useLocalSearchParams<{ categoryId?: string; date?: string }>();
+  const { categoryId, date, status } = useLocalSearchParams<{ categoryId?: string; date?: string; status?: string }>();
   const router = useRouter();
   const now = useNow();
   const categories = useCategories();
@@ -81,6 +83,7 @@ export default function NewTaskScreen() {
         initialCategoryId={categoryId}
         requestedCategoryId={createdCategoryId}
         initialDueAt={initialDueAt}
+        initialStatus={isStatusKey(status) ? status : undefined}
         busy={busy}
         onSubmit={submit}
         onCancel={close}

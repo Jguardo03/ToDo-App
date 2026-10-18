@@ -13,6 +13,7 @@ import type {
   SubtaskPatch,
   TaskPatch,
 } from '@/domain/types';
+import { formatDateTime } from '@/utils/dates';
 
 /** Keep in sync with firestore.rules. */
 export const LIMITS = {
@@ -80,14 +81,29 @@ export function validateNewTask(input: NewTask): Validation<NewTask> {
   return result(errors);
 }
 
-export function validateNewSubtask(input: NewSubtask): Validation<NewSubtask> {
+/** What a subtask is checked against. */
+export type SubtaskContext = {
+  /** The parent task's due date-time. A subtask may be due at that time or earlier, never later. */
+  parentDueAt?: Date;
+};
+
+/** The sentence shown when a subtask is due after its task. */
+export function subtaskDueMessage(parentDueAt: Date): string {
+  return `Must not be after the task's due time (${formatDateTime(parentDueAt)}).`;
+}
+
+export function validateNewSubtask(input: NewSubtask, context: SubtaskContext = {}): Validation<NewSubtask> {
   const errors: FieldErrors<NewSubtask> = {};
   setIfDefined(errors, 'name', nameError(input.name));
   setIfDefined(errors, 'description', descriptionError(input.description));
   if (!isPriorityKey(input.priority)) errors.priority = 'Choose a priority.';
   if (input.status !== undefined && !isStatusKey(input.status)) errors.status = 'Choose a status.';
   const dueError = dateError(input.dueAt);
-  if (dueError) errors.dueAt = dueError;
+  if (dueError) {
+    errors.dueAt = dueError;
+  } else if (context.parentDueAt && !Number.isNaN(context.parentDueAt.getTime()) && input.dueAt.getTime() > context.parentDueAt.getTime()) {
+    errors.dueAt = subtaskDueMessage(context.parentDueAt);
+  }
   return result(errors);
 }
 
@@ -113,14 +129,18 @@ export function validateTaskPatch(patch: TaskPatch): Validation<TaskPatch> {
   return onlyPatchedFields(result, patch);
 }
 
-export function validateSubtaskPatch(patch: SubtaskPatch): Validation<SubtaskPatch> {
-  const result = validateNewSubtask({
-    name: 'x',
-    description: '',
-    priority: 'medium',
-    dueAt: FAR_FUTURE,
-    ...definedOnly(patch),
-  });
+export function validateSubtaskPatch(patch: SubtaskPatch, context: SubtaskContext = {}): Validation<SubtaskPatch> {
+  const result = validateNewSubtask(
+    {
+      name: 'x',
+      description: '',
+      priority: 'medium',
+      // A placeholder for a due date the patch leaves out; errors are only reported for fields the patch has.
+      dueAt: context.parentDueAt ?? FAR_FUTURE,
+      ...definedOnly(patch),
+    },
+    context,
+  );
   return onlyPatchedFields(result, patch);
 }
 

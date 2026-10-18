@@ -12,7 +12,7 @@ import { TextArea, TextField } from '@/components/ui/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { DEFAULT_PRIORITY } from '@/constants/priorities';
 import { Spacing } from '@/constants/theme';
-import type { NewSubtask, PriorityKey } from '@/domain/types';
+import type { NewSubtask, PriorityKey, Subtask } from '@/domain/types';
 import { validateNewSubtask, type FieldErrors } from '@/domain/validation';
 import { formatDateTime, formatRelativeDay } from '@/utils/dates';
 
@@ -21,16 +21,20 @@ type SubtaskFormProps = {
   parent: { id: string; name: string; dueAt: Date; category: { name: string; color: string } };
   now: Date;
   busy?: boolean;
+  /** Edit an existing subtask: fields start filled in. */
+  initial?: Subtask;
   onSubmit: (input: NewSubtask) => void | Promise<void>;
   onCancel?: () => void;
+  /** Shows a "Delete Subtask" button (edit mode). */
+  onDelete?: () => void;
 };
 
 /** Add-subtask form (mockups: add_subtask, mobile_add_subtask). */
-export function SubtaskForm({ parent, now, busy, onSubmit, onCancel }: SubtaskFormProps) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [dueAt, setDueAt] = useState<Date | undefined>(parent.dueAt);
-  const [priority, setPriority] = useState<PriorityKey>(DEFAULT_PRIORITY);
+export function SubtaskForm({ parent, now, busy, initial, onSubmit, onCancel, onDelete }: SubtaskFormProps) {
+  const [name, setName] = useState(initial?.name ?? '');
+  const [description, setDescription] = useState(initial?.description ?? '');
+  const [dueAt, setDueAt] = useState<Date | undefined>(initial?.dueAt ?? parent.dueAt);
+  const [priority, setPriority] = useState<PriorityKey>(initial?.priority ?? DEFAULT_PRIORITY);
   const [errors, setErrors] = useState<FieldErrors<NewSubtask>>({});
 
   const submit = () => {
@@ -40,7 +44,7 @@ export function SubtaskForm({ parent, now, busy, onSubmit, onCancel }: SubtaskFo
       priority,
       dueAt: dueAt ?? new Date(Number.NaN),
     };
-    const result = validateNewSubtask(input);
+    const result = validateNewSubtask(input, { parentDueAt: parent.dueAt });
     setErrors(result.ok ? {} : result.errors);
     if (result.ok) void onSubmit(input);
   };
@@ -49,13 +53,14 @@ export function SubtaskForm({ parent, now, busy, onSubmit, onCancel }: SubtaskFo
 
   return (
     <FormLayout
-      title="New Subtask"
+      title={initial ? 'Edit Subtask' : 'New Subtask'}
       subtitle="Inherits the category of its parent task."
       badge="Subtask"
       actions={
         <>
           {onCancel ? <Button label="Cancel" variant="secondary" onPress={onCancel} /> : null}
-          <Button label="Add Subtask" icon="check" loading={busy} onPress={submit} />
+          <Button label={initial ? 'Save Subtask' : 'Add Subtask'} icon="check" loading={busy} onPress={submit} />
+          {onDelete ? <Button label="Delete Subtask" variant="danger" icon="delete" onPress={onDelete} /> : null}
         </>
       }
       main={
@@ -109,6 +114,9 @@ export function SubtaskForm({ parent, now, busy, onSubmit, onCancel }: SubtaskFo
               {formatRelativeDay(dueAt, now)}
             </ThemedText>
           ) : null}
+          <ThemedText variant="bodySm" color="onSurfaceVariant">
+            {`On or before the task's due time (${formatDateTime(parent.dueAt)}).`}
+          </ThemedText>
 
           <View style={styles.spread}>
             <ThemedText variant="headlineSm" accessibilityRole="header">

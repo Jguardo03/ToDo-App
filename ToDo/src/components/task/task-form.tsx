@@ -13,7 +13,7 @@ import { TextArea, TextField } from '@/components/ui/text-field';
 import { ThemedText } from '@/components/themed-text';
 import { DEFAULT_PRIORITY } from '@/constants/priorities';
 import { Spacing } from '@/constants/theme';
-import type { Category, NewSubtask, NewTask, NewTaskDraft, PriorityKey } from '@/domain/types';
+import type { Category, NewSubtask, NewTask, NewTaskDraft, PriorityKey, StatusKey, Task } from '@/domain/types';
 import { validateNewSubtask, validateNewTask, type FieldErrors } from '@/domain/validation';
 import { defaultDueAt } from '@/utils/dates';
 
@@ -28,6 +28,10 @@ type TaskFormProps = {
   requestedCategoryId?: string;
   /** Pre-filled due date-time (for example the day selected in the Calendar). */
   initialDueAt?: Date;
+  /** Status the new task starts with (for example from "Add Task to Status"). Defaults to pending. */
+  initialStatus?: StatusKey;
+  /** Edit an existing task: fields start filled in and the inline subtasks section is hidden. */
+  initial?: Task;
   title?: string;
   submitLabel?: string;
   busy?: boolean;
@@ -45,18 +49,20 @@ export function TaskForm({
   initialCategoryId,
   requestedCategoryId,
   initialDueAt,
-  title = 'New Task',
-  submitLabel = 'Create Task',
+  initialStatus,
+  initial,
+  title = initial ? 'Edit Task' : 'New Task',
+  submitLabel = initial ? 'Save Changes' : 'Create Task',
   busy,
   onSubmit,
   onCancel,
   onCreateCategory,
 }: TaskFormProps) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [dueAt, setDueAt] = useState<Date | undefined>(initialDueAt ?? defaultDueAt(now));
-  const [categoryId, setCategoryId] = useState(initialCategoryId ?? categories[0]?.id ?? '');
-  const [priority, setPriority] = useState<PriorityKey>(DEFAULT_PRIORITY);
+  const [name, setName] = useState(initial?.name ?? '');
+  const [description, setDescription] = useState(initial?.description ?? '');
+  const [dueAt, setDueAt] = useState<Date | undefined>(initial?.dueAt ?? initialDueAt ?? defaultDueAt(now));
+  const [categoryId, setCategoryId] = useState(initial?.categoryId ?? initialCategoryId ?? categories[0]?.id ?? '');
+  const [priority, setPriority] = useState<PriorityKey>(initial?.priority ?? DEFAULT_PRIORITY);
   const [appliedRequest, setAppliedRequest] = useState(requestedCategoryId);
   if (requestedCategoryId !== appliedRequest) {
     setAppliedRequest(requestedCategoryId);
@@ -81,6 +87,7 @@ export function TaskForm({
       name: name.trim(),
       description,
       priority,
+      ...(initialStatus && initialStatus !== 'pending' ? { status: initialStatus } : {}),
       dueAt: dueAt ?? new Date(Number.NaN),
     };
     const taskResult = validateNewTask(task);
@@ -93,7 +100,8 @@ export function TaskForm({
     }));
     const nextDraftErrors: Record<number, FieldErrors<NewSubtask>> = {};
     subtasks.forEach((subtask, index) => {
-      const result = validateNewSubtask(subtask);
+      // A subtask may not be due after its task (the task's due time as currently entered).
+      const result = validateNewSubtask(subtask, { parentDueAt: dueAt });
       if (!result.ok) nextDraftErrors[drafts[index].key] = result.errors;
     });
 
@@ -133,6 +141,7 @@ export function TaskForm({
         />
       </Card>
 
+      {initial ? null : (
       <Card style={styles.stack}>
         <View style={styles.sectionHeader}>
           <View style={styles.inline}>
@@ -177,6 +186,7 @@ export function TaskForm({
           </Card>
         ))}
       </Card>
+      )}
     </>
   );
 
@@ -184,6 +194,11 @@ export function TaskForm({
     <>
       <Card style={styles.stack}>
         <DateTimeField label="Date & Time" value={dueAt} onChange={setDueAt} error={errors.dueAt} />
+        {initial ? (
+          <ThemedText variant="bodySm" color="onSurfaceVariant">
+            Subtasks due later than this move to the new due time.
+          </ThemedText>
+        ) : null}
 
         <View style={styles.sectionHeader}>
           <ThemedText variant="headlineSm" accessibilityRole="header">
@@ -218,7 +233,7 @@ export function TaskForm({
   return (
     <FormLayout
       title={title}
-      subtitle="Add the details and, if you like, some subtasks."
+      subtitle={initial ? 'Change any detail of this task.' : 'Add the details and, if you like, some subtasks.'}
       main={main}
       side={side}
       actions={actions}

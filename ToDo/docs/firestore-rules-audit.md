@@ -23,6 +23,7 @@ The rules are a prototype. The one critical finding follows directly from the br
 | 7 | Time fields | Minor | `createdAt` / `updatedAt` come from the client clock and are not compared with `request.time`. | Accept. Using server timestamps would complicate the offline-friendly repository tests. |
 | 8 | Username probing | Minor | `get` on `users/{username}` is allowed so sign-in can check a name, which also lets anyone test whether a handle exists. Listing users is denied. | Accept; required by the sign-in design. |
 | 10 | Found by running, not by review | Minor (fixed) | List queries were denied because `read` rules referenced the document id, which is not bound for a list. Fixed by splitting `get` and `list`. | Keep the real-Firestore contract run (`npm run test:firestore`) as the check for every rules change. |
+| 11 | Subtask due date | Minor | A subtask is checked against its parent's `dueAt` when the subtask is written (`getAfter`). The reverse (moving a task earlier without moving its subtasks) cannot be checked by rules; the app moves them together. | Accept. |
 | 9 | Cost | Minor | Creating a task or category runs one `exists()` read on the user (and the category), and updating a task's category runs one more. | Accept for this scale. |
 
 ## What would change the score

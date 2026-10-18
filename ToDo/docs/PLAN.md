@@ -311,6 +311,8 @@ Layer rule: `app → components → hooks → repositories → services/firebase
 
 ## Phase 8 — Task detail, subtasks and Status detail
 
+> **Status: done 2026-10-18** (with optimistic ticks folded in, as agreed). Task page, edit and delete with confirmation, subtask add/edit/delete/tick, status lists, Home rows open tasks. 313 tests pass (52 new); typecheck and lint clean. Checked in the browser against the real Firebase project (open task, tick a subtask, reload, delete with confirmation), then the test user was deleted. Decisions: `decisions.md` ("Phase 8"). Not yet committed.
+
 **How this serves the primary goal:** breaking a task into subtasks and moving it through its states is the core daily loop.
 
 **What to implement:**

@@ -99,6 +99,10 @@ erDiagram
     }
 ```
 
+## Rules between fields
+
+- A subtask's `dueAt` is on or before its task's `dueAt`. Moving a task's `dueAt` earlier moves later subtasks to the new time.
+
 ## Derived (never stored)
 
 - `overdue` = `status != done` and `dueAt < now`

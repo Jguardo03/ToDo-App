@@ -124,3 +124,24 @@ export function completionRate(tasks: readonly Pick<Task, 'status'>[]): number {
   if (tasks.length === 0) return 0;
   return Math.round((tasks.filter((task) => task.status === 'done').length / tasks.length) * 100);
 }
+
+export type SubtaskProgress = { done: number; total: number; fraction: number };
+
+/** Progress of a task computed from its subtask list (used while the list is on screen, so ticks show at once). */
+export function subtaskProgress(subtasks: readonly Pick<Subtask, 'status'>[]): SubtaskProgress {
+  const total = subtasks.length;
+  const done = subtasks.filter((subtask) => subtask.status === 'done').length;
+  return { done, total, fraction: total === 0 ? 0 : done / total };
+}
+
+/** True when the task has subtasks and every one is done: the moment to offer "Finish Task". */
+export function allSubtasksDone(subtasks: readonly Pick<Subtask, 'status'>[]): boolean {
+  return subtasks.length > 0 && subtasks.every((subtask) => subtask.status === 'done');
+}
+
+/** Tasks currently shown as `status` (so `overdue` includes late pending and in-process tasks), soonest due first. */
+export function tasksWithDisplayStatus(tasks: readonly Task[], status: DisplayStatusKey, now: Date): Task[] {
+  return tasks
+    .filter((task) => displayStatus(task, now) === status)
+    .sort((a, b) => a.dueAt.getTime() - b.dueAt.getTime());
+}

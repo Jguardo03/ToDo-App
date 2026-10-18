@@ -2,15 +2,9 @@ import { act, fireEvent, screen, waitFor } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 import { Dimensions } from 'react-native';
 
+import { appRoutes } from '../../config/jest/app-routes';
 import { createFakeStorage, makeTestRoot } from '../../config/jest/session-helpers';
 
-import SignInScreen from '@/app/sign-in';
-import TabsLayout from '@/app/(tabs)/_layout';
-import CalendarScreen from '@/app/(tabs)/calendar';
-import CategoriesScreen from '@/app/(tabs)/categories';
-import HomeScreen from '@/app/(tabs)/index';
-import NewTaskScreen from '@/app/task/new';
-import StatusScreen from '@/app/status/[status]';
 import { RootNavigator } from '@/components/layout/root-navigator';
 import { createMemoryRepositories } from '@/repositories/memory/memory-repositories';
 import type { StoredSession } from '@/services/session-storage';
@@ -22,13 +16,7 @@ function setWindowWidth(width: number) {
 function routes(options: { initial?: StoredSession; storage?: ReturnType<typeof createFakeStorage>['storage']; repositories?: ReturnType<typeof createMemoryRepositories> }) {
   return {
     _layout: makeTestRoot({ ...options, children: () => <RootNavigator /> }),
-    'sign-in': SignInScreen,
-    '(tabs)/_layout': TabsLayout,
-    '(tabs)/index': HomeScreen,
-    '(tabs)/calendar': CalendarScreen,
-    '(tabs)/categories': CategoriesScreen,
-    'task/new': NewTaskScreen,
-    'status/[status]': StatusScreen,
+    ...appRoutes,
   };
 }
 

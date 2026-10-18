@@ -209,6 +209,15 @@ export function createMemoryRepositories(options: RepositoryOptions = {}): Repos
       if (patch.name !== undefined) task.name = patch.name.trim();
       if (startAt === null) delete task.startAt;
       else if (startAt) task.startAt = startAt;
+      // A subtask may not be due after its task: moving the task earlier moves later subtasks with it.
+      if (patch.dueAt) {
+        for (const subtask of store.get(username)?.subtasks.get(id)?.values() ?? []) {
+          if (subtask.dueAt.getTime() > patch.dueAt.getTime()) {
+            subtask.dueAt = patch.dueAt;
+            subtask.updatedAt = task.updatedAt;
+          }
+        }
+      }
       notify();
     },
     async setStatus(username, id, status: StatusKey) {
@@ -251,8 +260,8 @@ export function createMemoryRepositories(options: RepositoryOptions = {}): Repos
       return subscribeTo(() => sortedSubtasks(username, taskId), onData);
     },
     async create(username, taskId, input: NewSubtask) {
-      assertValid(validateNewSubtask(input));
       const task = requireTask(username, taskId);
+      assertValid(validateNewSubtask(input, { parentDueAt: task.dueAt }));
       const createdAt = now();
       const status = input.status ?? DEFAULT_STATUS;
       const subtask: Subtask = {
@@ -275,7 +284,8 @@ export function createMemoryRepositories(options: RepositoryOptions = {}): Repos
       return clone(subtask);
     },
     async update(username, taskId, id, patch) {
-      assertValid(validateSubtaskPatch(patch));
+      const task = requireTask(username, taskId);
+      assertValid(validateSubtaskPatch(patch, { parentDueAt: task.dueAt }));
       const subtask = requireSubtask(username, taskId, id);
       Object.assign(subtask, definedOnly(patch), { updatedAt: now() });
       if (patch.name !== undefined) subtask.name = patch.name.trim();

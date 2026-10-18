@@ -31,7 +31,7 @@ rules_version = '2';
 //
 // users/{username}/tasks/{taskId}/subtasks/{subtaskId}
 //   taskId: string (== parent id, immutable), name: string 1-80, description: string <= 2000
-//   priority, status as above, dueAt: timestamp, completedAt: timestamp, optional
+//   priority, status as above, dueAt: timestamp (<= the parent task's dueAt), completedAt: timestamp, optional
 //   createdAt (immutable), updatedAt: timestamp
 //
 // There is no cascade delete in rules: the app deletes a task's subtasks together with the task.
@@ -80,6 +80,11 @@ service cloud.firestore {
 
     function taskDoc(username, taskId) {
       return /databases/$(database)/documents/users/$(username)/tasks/$(taskId);
+    }
+
+    // A subtask is due at the same time as its task or earlier.
+    function isNotDueAfterTask(data, username, taskId) {
+      return data.dueAt <= getAfter(taskDoc(username, taskId)).data.dueAt;
     }
 
     // ---------- Validators (used on BOTH create and update) ----------
@@ -181,11 +186,15 @@ service cloud.firestore {
         match /subtasks/{subtaskId} {
           allow get: if isValidUsername(username) && isValidId(taskId) && isValidId(subtaskId);
           allow list: if isValidUsername(username) && isValidId(taskId);
+          // The parent task must exist (getAfter fails otherwise) and the subtask may not be due after it.
+          // getAfter sees the task as it will be once the whole batch is written, so a task moved earlier and its
+          // subtasks moved with it in one batch is allowed.
           allow create: if isValidUsername(username) && isValidId(taskId) && isValidId(subtaskId)
-            && exists(taskDoc(username, taskId))
+            && isNotDueAfterTask(request.resource.data, username, taskId)
             && isValidSubtask(request.resource.data, taskId);
           allow update: if isValidUsername(username) && isValidId(taskId) && isValidId(subtaskId)
             && isValidSubtask(request.resource.data, taskId)
+            && isNotDueAfterTask(request.resource.data, username, taskId)
             && request.resource.data.createdAt == resource.data.createdAt;
           allow delete: if isValidUsername(username) && isValidId(taskId) && isValidId(subtaskId);
         }

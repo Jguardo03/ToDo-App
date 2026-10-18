@@ -11,6 +11,9 @@ import {
   progress,
   progressPercent,
   selectDueToday,
+  subtaskProgress,
+  allSubtasksDone,
+  tasksWithDisplayStatus,
   sortByPriority,
   statusCounts,
 } from '@/domain/derive';
@@ -179,5 +182,38 @@ describe('Home helpers', () => {
     expect(completionRate([])).toBe(0);
     expect(completionRate([{ status: 'done' }, { status: 'pending' }, { status: 'pending' }])).toBe(33);
     expect(completionRate([{ status: 'done' }])).toBe(100);
+  });
+});
+
+describe('subtask-based progress and status lists', () => {
+  const at = (hours: number, dayOffset = 0) => new Date(2026, 9, 18 + dayOffset, hours, 0);
+
+  it('subtaskProgress counts done subtasks and gives a fraction', () => {
+    expect(subtaskProgress([])).toEqual({ done: 0, total: 0, fraction: 0 });
+    expect(subtaskProgress([{ status: 'done' }, { status: 'done' }, { status: 'pending' }, { status: 'in_process' }, { status: 'pending' }])).toEqual({
+      done: 2,
+      total: 5,
+      fraction: 0.4,
+    });
+  });
+
+  it('allSubtasksDone needs at least one subtask and all of them done', () => {
+    expect(allSubtasksDone([])).toBe(false);
+    expect(allSubtasksDone([{ status: 'done' }, { status: 'pending' }])).toBe(false);
+    expect(allSubtasksDone([{ status: 'done' }, { status: 'done' }])).toBe(true);
+  });
+
+  it('tasksWithDisplayStatus filters by what is shown, soonest first', () => {
+    const tasks = [
+      makeTask({ id: 'late-pending', status: 'pending', dueAt: at(9, -1) }),
+      makeTask({ id: 'late-process', status: 'in_process', dueAt: at(8, -2) }),
+      makeTask({ id: 'later', status: 'pending', dueAt: at(20) }),
+      makeTask({ id: 'done-late', status: 'done', dueAt: at(9, -3) }),
+      makeTask({ id: 'process', status: 'in_process', dueAt: at(18) }),
+    ];
+    expect(tasksWithDisplayStatus(tasks, 'overdue', NOW).map((t) => t.id)).toEqual(['late-process', 'late-pending']);
+    expect(tasksWithDisplayStatus(tasks, 'pending', NOW).map((t) => t.id)).toEqual(['later']);
+    expect(tasksWithDisplayStatus(tasks, 'in_process', NOW).map((t) => t.id)).toEqual(['process']);
+    expect(tasksWithDisplayStatus(tasks, 'done', NOW).map((t) => t.id)).toEqual(['done-late']);
   });
 });

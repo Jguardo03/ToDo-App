@@ -1,6 +1,7 @@
 import {
   deleteField,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   runTransaction,
@@ -82,7 +83,10 @@ export function createSubtaskRepository(db: Firestore, options: RepositoryOption
         await runTransaction(db, async (tx) => {
           const parentSnap = await tx.get(parent);
           if (!parentSnap.exists()) throw new RepositoryError('not-found', 'Task not found.');
-          const counters = nextCounters(taskFromData(taskId, parentSnap.data()), undefined, subtask);
+          const parentTask = taskFromData(taskId, parentSnap.data());
+          // A subtask may not be due after its task.
+          assertValid(validateNewSubtask(input, { parentDueAt: parentTask.dueAt }));
+          const counters = nextCounters(parentTask, undefined, subtask);
           tx.set(ref, subtaskToData(subtask));
           tx.update(parent, { ...counters, updatedAt: toTimestamp(at) });
         });
@@ -95,6 +99,11 @@ export function createSubtaskRepository(db: Firestore, options: RepositoryOption
         assertId(taskId, 'task');
         assertId(id, 'subtask');
         assertValid(validateSubtaskPatch(patch));
+        if (patch.dueAt !== undefined) {
+          const parentSnap = await getDoc(taskRef(db, username, taskId));
+          if (!parentSnap.exists()) throw new RepositoryError('not-found', 'Task not found.');
+          assertValid(validateSubtaskPatch(patch, { parentDueAt: taskFromData(taskId, parentSnap.data()).dueAt }));
+        }
         const changes: DocumentData = { updatedAt: toTimestamp(now()) };
         if (patch.name !== undefined) changes.name = patch.name.trim();
         if (patch.description !== undefined) changes.description = patch.description;

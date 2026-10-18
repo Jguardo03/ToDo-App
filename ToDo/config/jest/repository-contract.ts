@@ -249,6 +249,33 @@ export function describeRepositoryContract(label: string, factory: ContractFacto
         expect(await repos.subtasks.list(username, task.id)).toEqual([]);
       });
 
+      it('moving a task earlier moves later subtasks with it; earlier ones and later moves change nothing', async () => {
+        const task = await repos.tasks.create(username, newTask({ dueAt: at(17) }));
+        const sub = (name: string, hours: number) =>
+          repos.subtasks.create(username, task.id, { name, description: '', priority: 'low', dueAt: at(hours) });
+        await sub('Early', 14);
+        await sub('Middle', 16);
+        await sub('Last', 17);
+
+        setNow(at(13));
+        await repos.tasks.update(username, task.id, { dueAt: at(15) });
+        // All three were created at the same instant, so their list order is not defined: compare by name.
+        const byName = async () =>
+          (await repos.subtasks.list(username, task.id)).sort((a, b) => a.name.localeCompare(b.name));
+        const moved = await byName();
+        expect(moved.map((s) => [s.name, s.dueAt])).toEqual([
+          ['Early', at(14)],
+          ['Last', at(15)],
+          ['Middle', at(15)],
+        ]);
+        expect(moved[0].updatedAt).toEqual(CLOCK_START); // untouched
+        expect(moved[2].updatedAt).toEqual(at(13));
+        expect((await repos.tasks.get(username, task.id))?.dueAt).toEqual(at(15));
+
+        await repos.tasks.update(username, task.id, { dueAt: at(20) }); // later: nothing moves
+        expect((await byName()).map((s) => s.dueAt)).toEqual([at(14), at(15), at(15)]);
+      });
+
       it('streams changes', async () => {
         const seen: string[][] = [];
         const unsubscribe = repos.tasks.subscribe(username, (items) => seen.push(items.map((t) => t.name)));
@@ -323,6 +350,22 @@ export function describeRepositoryContract(label: string, factory: ContractFacto
       it('fails for a missing parent task and for bad input', async () => {
         await rejectsWith(repos.subtasks.create(username, 'missing', newSubtask()), 'not-found');
         await rejectsWith(repos.subtasks.create(username, taskId, newSubtask({ name: '' })), 'invalid');
+      });
+
+      it('may be due at the same time as its task or earlier, never later', async () => {
+        // the parent task is due at 17:00
+        await repos.subtasks.create(username, taskId, newSubtask({ name: 'Same time', dueAt: at(17) }));
+        await repos.subtasks.create(username, taskId, newSubtask({ name: 'Earlier', dueAt: at(9) }));
+        await rejectsWith(repos.subtasks.create(username, taskId, newSubtask({ dueAt: at(17, 1) })), 'invalid');
+        expect(await repos.subtasks.list(username, taskId)).toHaveLength(2);
+      });
+
+      it('cannot be moved past the due time of its task', async () => {
+        const sub = await repos.subtasks.create(username, taskId, newSubtask({ dueAt: at(12) }));
+        await repos.subtasks.update(username, taskId, sub.id, { dueAt: at(17) });
+        await rejectsWith(repos.subtasks.update(username, taskId, sub.id, { dueAt: at(18) }), 'invalid');
+        expect((await repos.subtasks.list(username, taskId))[0].dueAt).toEqual(at(17));
+        await repos.subtasks.update(username, taskId, sub.id, { name: 'Renamed' }); // other changes are unaffected
       });
 
       it('treats removing a missing subtask as a no-op and rejects updating one', async () => {

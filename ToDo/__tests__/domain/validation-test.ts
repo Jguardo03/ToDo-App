@@ -156,3 +156,40 @@ describe('patch validators only judge the fields that are present', () => {
     });
   });
 });
+
+describe('a subtask may not be due after its task', () => {
+  const parentDueAt = new Date(2026, 9, 18, 17, 0);
+  const subtask = (dueAt: Date) => ({ name: 'Draft', description: '', priority: 'medium' as const, dueAt });
+
+  it('accepts a subtask due before or exactly at the task due time', () => {
+    expect(validateNewSubtask(subtask(new Date(2026, 9, 18, 9, 0)), { parentDueAt })).toEqual({ ok: true });
+    expect(validateNewSubtask(subtask(parentDueAt), { parentDueAt })).toEqual({ ok: true });
+  });
+
+  it('rejects one due even a minute later, naming the task due time', () => {
+    expect(validateNewSubtask(subtask(new Date(2026, 9, 18, 17, 1)), { parentDueAt })).toEqual({
+      ok: false,
+      errors: { dueAt: "Must not be after the task's due time (Oct 18, 2026, 5:00 PM)." },
+    });
+  });
+
+  it('checks nothing against the task when no due time is given (older callers)', () => {
+    expect(validateNewSubtask(subtask(new Date(2030, 0, 1)))).toEqual({ ok: true });
+  });
+
+  it('still reports an invalid date as such', () => {
+    expect(validateNewSubtask(subtask(new Date('nope')), { parentDueAt })).toEqual({
+      ok: false,
+      errors: { dueAt: 'Pick a date and time.' },
+    });
+  });
+
+  it('applies to patches only when the patch changes the due time', () => {
+    expect(validateSubtaskPatch({ dueAt: new Date(2026, 9, 18, 18, 0) }, { parentDueAt })).toMatchObject({
+      ok: false,
+      errors: { dueAt: expect.stringContaining("Must not be after the task's due time") },
+    });
+    expect(validateSubtaskPatch({ dueAt: new Date(2026, 9, 18, 12, 0) }, { parentDueAt })).toEqual({ ok: true });
+    expect(validateSubtaskPatch({ name: 'Renamed' }, { parentDueAt })).toEqual({ ok: true });
+  });
+});

@@ -144,6 +144,28 @@ Newest first inside each section. Each entry says what was decided, why, and whe
 | **In-memory ids sort in creation order** (a counter follows the timestamp) | Subtasks created in the same millisecond must keep their order in tests; real Firestore ids differ in time anyway |
 | **`npm run typecheck` deletes the generated route types first** | A running dev server regenerates `.expo/types/router.d.ts` with bad entries and caused false errors |
 
+### Phase 8 — task page, subtasks, status lists, optimistic ticks (2026-10-18)
+
+| Decision | Why |
+|---|---|
+| **Ticks are optimistic** (`useOptimisticStatus`, with `useOptimisticTasks` / `useOptimisticSubtasks`). A tap changes the screen in the same frame; the write runs in the background. Success: the temporary override is dropped once saved. Failure: the old status returns and a message says why. Used on Home, status lists, the task page lifecycle selector, subtask ticks and Finish Task. Measured in the browser against real Firebase: the checkbox flipped in one frame (16 ms) and the change was still there after a reload | Smoother feel. Done at screen level, not in the data layer, so it works with the in-memory fake and needs no repository API change |
+| **Each item is independent, and only the latest change to an item counts** | Ticking several rows, or tapping the same one twice, cannot undo or mislead each other |
+| **Offline caveat:** without offline persistence Firestore queues a write in memory and does not fail it, so an optimistic tick stays on screen with no error until the connection returns, and is lost if the tab closes | Known limit of the web SDK default; fixing it needs offline persistence, a separate decision |
+| **The task page computes progress from the subtask list on screen** (not from the stored counters) | So a subtask tick moves the percentage in the same frame; the counters (used by Home) catch up from the server |
+| **The lifecycle selector shows `Overdue` (disabled) when the deadline has passed, even after you choose In Process** | Overdue is derived (ERD). The stored status still changes; the page keeps reporting the lateness |
+| **Finish Task completes the task; a done task shows "Reopen Task" (back to pending).** When every subtask is done and the task is not, the page says "All subtasks are done. Finish the task?" | Plan rule; finishing is never automatic |
+| **Routes:** `task/[id]` (page), `task/[id]/edit`, `task/[id]/subtask-new`, `task/[id]/subtask/[subtaskId]`, `status/[status]`. All are listed under the signed-in guard in `RootNavigator` | A screen missing from the guard could be opened by address while signed out. `config/jest/app-routes.tsx` is the one route list tests use |
+| **Delete asks first** (`ConfirmDialog`), a sheet with Cancel first and a red "Delete ..." button, because `Alert.alert` does nothing on the web. Deleting a task deletes its subtasks | Prevents accidental loss |
+| **Edit task reuses `TaskForm`** (`initial`): fields filled in, subtasks section hidden, only name, description, category, priority and due date are saved | One form for create and edit; status and subtasks change on the task page |
+| **Editing a task cannot create a category** (no "New" pill in edit mode) | Keep the edit form simple; categories are managed in Phase 9 |
+| **Subtask edit and delete live on `task/[id]/subtask/[subtaskId]`** (tap a subtask row) | Keeps the task page uncluttered |
+| **Status list:** tasks currently shown as that status (so Overdue includes late pending and in-process tasks), soonest due first. A tick removes the task from the list at once. "Add Task to Status" opens the new-task form with that status (`?status=`), and is not offered for Overdue | Overdue is a state you are in, not one a task can start in |
+| **Home rows open the task page** | Phase 7 left them unpressable |
+| **Danger button variant** (red) for delete actions | Distinguishes destructive actions |
+| **A subtask is never due after its task** (the same time is allowed). Enforced in the forms (message names the task's due time, plus a hint under the field), in both repositories (`invalid` error), and in `firestore.rules` (`getAfter` on the parent task). Owner request, 2026-10-18. Rules deployed to `todo-e618b` the same day; verified by the 32-case contract against the live project and by writing straight to Firestore (later: `permission-denied`; same time and earlier: allowed) | Keeps the plan consistent: a step cannot finish after the thing it belongs to |
+| **Moving a task's due time earlier moves its later subtasks to the new time** (same batch in Firestore; earlier subtasks are untouched; moving later changes nothing). The edit form says so under the date | Blocking the edit would trap people; silently leaving invalid subtasks would break the rule. The change is announced in the form |
+| **Rule limits:** the rules check a subtask against its task when the subtask is written, but cannot check the other direction (a modified client could move a task earlier without moving its subtasks) | Rules cannot query a task's other documents. Accepted, same class as the other client-trust limits |
+
 ### Open for later phases
 
 | Topic | Phase |

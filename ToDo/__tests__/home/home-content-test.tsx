@@ -36,6 +36,7 @@ const props = {
   tasks,
   categories,
   onToggleDone: jest.fn(),
+  onOpenTask: jest.fn(),
   onQuickAdd: jest.fn(),
   onAddTask: jest.fn(),
   onBrowseCategories: jest.fn(),
@@ -83,6 +84,12 @@ describe('HomeContent (phone)', () => {
     expect(props.onToggleDone).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'b' }), true);
     fireEvent.press(screen.getByRole('checkbox', { name: 'Mark Ship Release not done' }));
     expect(props.onToggleDone).toHaveBeenLastCalledWith(expect.objectContaining({ id: 'd' }), false);
+  });
+
+  it('opens a task when its row is pressed', () => {
+    render(<HomeContent {...props} />);
+    fireEvent.press(screen.getByRole('button', { name: /^API Schema Review,/ }));
+    expect(props.onOpenTask).toHaveBeenCalledWith(expect.objectContaining({ id: 'b' }));
   });
 
   it('shows the clear-skies state with actions when nothing is due today', () => {
