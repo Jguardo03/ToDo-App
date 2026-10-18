@@ -3,7 +3,7 @@
  * Every function takes `now` as a parameter, so tests need no fake clock.
  */
 
-import type { DisplayStatusKey, StatusKey, Task } from '@/domain/types';
+import type { DisplayStatusKey, StatusKey, Subtask, Task } from '@/domain/types';
 
 type WithDue = Pick<Task, 'status' | 'dueAt'>;
 
@@ -76,6 +76,24 @@ export function applyStatus(
 ): { status: StatusKey; completedAt: Date | undefined } {
   if (next !== 'done') return { status: next, completedAt: undefined };
   return { status: next, completedAt: current.status === 'done' ? (current.completedAt ?? now) : now };
+}
+
+export type CounterDelta = { total: number; done: number };
+
+/**
+ * How a subtask change moves the parent task's `subtaskTotal` / `subtaskDone` counters.
+ * Pass `before` as undefined for a new subtask and `after` as undefined for a removed one.
+ */
+export function counterDelta(
+  before: Pick<Subtask, 'status'> | undefined,
+  after: Pick<Subtask, 'status'> | undefined,
+): CounterDelta {
+  const wasDone = before?.status === 'done' ? 1 : 0;
+  const isDone = after?.status === 'done' ? 1 : 0;
+  return {
+    total: (after ? 1 : 0) - (before ? 1 : 0),
+    done: isDone - wasDone,
+  };
 }
 
 function clamp01(value: number): number {

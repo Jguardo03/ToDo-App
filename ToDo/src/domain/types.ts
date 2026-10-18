@@ -91,3 +91,22 @@ export interface NewSubtask {
   status?: StatusKey;
   dueAt: Date;
 }
+
+export type CategoryPatch = Partial<NewCategory>;
+
+/** Fields that can change on an existing task. `startAt: null` clears it. Status changes are separate. */
+export type TaskPatch = {
+  name?: string;
+  description?: string;
+  categoryId?: string;
+  priority?: PriorityKey;
+  startAt?: Date | null;
+  dueAt?: Date;
+};
+
+export type SubtaskPatch = {
+  name?: string;
+  description?: string;
+  priority?: PriorityKey;
+  dueAt?: Date;
+};

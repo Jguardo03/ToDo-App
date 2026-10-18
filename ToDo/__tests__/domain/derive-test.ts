@@ -3,6 +3,7 @@ import { makeTask, minutesFromNow, NOW } from '../../config/jest/factories';
 import {
   applyStatus,
   categoryStats,
+  counterDelta,
   displayStatus,
   isOverdue,
   progress,
@@ -116,5 +117,24 @@ describe('applyStatus', () => {
 
   it('does not set completedAt for non-done statuses', () => {
     expect(applyStatus({ status: 'pending' }, 'in_process', NOW).completedAt).toBeUndefined();
+  });
+});
+
+describe('counterDelta', () => {
+  it('adds one to the total for a new subtask, and one to done when it starts done', () => {
+    expect(counterDelta(undefined, { status: 'pending' })).toEqual({ total: 1, done: 0 });
+    expect(counterDelta(undefined, { status: 'done' })).toEqual({ total: 1, done: 1 });
+  });
+
+  it('removes one from the total, and from done when the removed subtask was done', () => {
+    expect(counterDelta({ status: 'pending' }, undefined)).toEqual({ total: -1, done: 0 });
+    expect(counterDelta({ status: 'done' }, undefined)).toEqual({ total: -1, done: -1 });
+  });
+
+  it('moves done by one when a subtask enters or leaves done, and not at all otherwise', () => {
+    expect(counterDelta({ status: 'pending' }, { status: 'done' })).toEqual({ total: 0, done: 1 });
+    expect(counterDelta({ status: 'done' }, { status: 'in_process' })).toEqual({ total: 0, done: -1 });
+    expect(counterDelta({ status: 'done' }, { status: 'done' })).toEqual({ total: 0, done: 0 });
+    expect(counterDelta({ status: 'pending' }, { status: 'in_process' })).toEqual({ total: 0, done: 0 });
   });
 });

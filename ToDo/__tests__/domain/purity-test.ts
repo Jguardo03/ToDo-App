@@ -31,8 +31,10 @@ describe('layer purity', () => {
     },
   );
 
-  it('keeps Firebase out of components and routes', () => {
-    const files = [...sourceFiles(path.join(SRC, 'components')), ...sourceFiles(path.join(SRC, 'app'))];
+  it('keeps Firebase inside services/firebase and repositories only', () => {
+    const allowed = [path.join(SRC, 'services'), path.join(SRC, 'repositories')];
+    const files = sourceFiles(SRC).filter((file) => !allowed.some((dir) => file.startsWith(dir)));
+    expect(files.length).toBeGreaterThan(10);
     for (const file of files) {
       expect(fs.readFileSync(file, 'utf8')).not.toMatch(/from\s+['"]firebase/);
     }

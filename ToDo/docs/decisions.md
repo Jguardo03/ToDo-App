@@ -56,6 +56,34 @@ Newest first inside each section. Each entry says what was decided, why, and whe
 | **Priority/status chip colours** are theme tokens in `constants/priorities.ts` and `statuses.ts`: Low grey, Medium amber, High pink, Urgent red; Pending grey, In Process cyan, Done pink, Overdue red | Taken from `mobile_category_registry`, `mobile_status`, `home`. The mockups disagree in places (Medium is grey in `mobile_status`, "Normal" is cyan in `mobile_category_registry`); amber Medium matches the desktop Home "MID PRIORITY" chip |
 | **Subtasks have their own `status`** (pending / in_process / done) although the UI only shows a checkbox | ERD lists a subtask status; the checkbox toggles pending ↔ done |
 
+### Phase 4 — Firebase and database handlers (2026-10-18)
+
+| Decision | Why |
+|---|---|
+| **Cloud Firestore, Standard edition, default database.** Created by the owner in the Firebase console | Simplest and cheapest fit for these queries. The `firebase-firestore` skill defaults new databases to Enterprise edition; Standard is enough here and is what `firebase.json` assumes |
+| **`firebase` pinned to 12.19.0**, not 13 | Expo documents "12.0.0 and above". Version 13 needs Node 24.12+ for its packages and this machine runs Node 22. Revisit when Node is upgraded |
+| **Config from `EXPO_PUBLIC_FIREBASE_API_KEY / PROJECT_ID / APP_ID`** in `.env.local` (git-ignored), template in `.env.example`; read lazily on first database use | Web config values are public identifiers; the rules, not secrecy, protect data. Lazy read keeps tests and builds working without configuration. On Netlify the same three variables go in the site settings |
+| **Repositories behind interfaces** (`src/repositories/types.ts`) with two implementations: Firestore and an in-memory fake. UI code only sees the interfaces; Firebase is imported only in `services/firebase` and `repositories` (a test enforces it) | Component and hook tests use the fake; no UI code can depend on Firebase |
+| **One shared contract test suite** (`config/jest/repository-contract.ts`, 29 cases) runs against the fake in every `npm test`, and against Firestore when the emulator is available | The fake is only trustworthy if the real implementation is held to the same behaviour |
+| **Firestore implementation verified against the real project `todo-e618b` on 2026-10-18:** `npm run db:smoke` (14 checks) and `npm run test:firestore` (the full 29-case contract suite) both pass. The local emulator was not used (needs JDK 21+, this machine has Java 8) | The contract suite found two real bugs that the in-memory fake hid, both fixed (see next two rows) |
+| **Rules bug found and fixed by the real run:** `allow read` used the document id (`isValidId(categoryId)`), which is not bound for list queries, so every list was denied. Reads are now split: `get` checks ids, `list` checks only the username | Only a real Firestore run could show this; the rules had compiled fine |
+| **Updates check the document exists first** (`requireExisting`), so updating a missing document is `not-found`, not `permission-denied` | The rules read the existing document on update, so Firestore reports a missing one as a permission error. One extra read per update |
+| **The real-Firestore contract run uses its own Jest config** (`config/jest/firestore.jest.config.js`, plain Node, Babel TypeScript + CommonJS) and `npm run test:firestore`. It creates `ct...` users and deletes them afterwards. `npm run db:cleanup -- <username>...` removes leftovers of an interrupted run | The jest-expo React Native environment cannot make Firestore network calls. Usernames cannot be listed (rules forbid it), so leftovers must be named |
+| **Duplicate `@firebase/app` copies broke Firebase** (`Service firestore is not available`) after pinning `firebase` 12.19.0 over an earlier 13 install. Fixed with `npm dedupe`; if it returns, run `npm dedupe` again | Two copies of `@firebase/app` mean two component registries |
+| **Dates use the client clock** (`now()` is injected), stored as Firestore Timestamps | Makes every test deterministic; skew is irrelevant for a to-do list |
+| **No composite indexes.** Lists use equality or a single-field range, and are sorted in code. `firestore.indexes.json` stays empty | Avoids index deployment steps. Revisit if a query combines a filter and an order on different fields |
+| **A task belongs to the calendar day of its `dueAt`** (local time zone); `listByDay` is a server-side range query on `dueAt` | One rule for Home "due today" and the Calendar |
+| **Category delete is blocked while tasks use it** (`category-in-use`); the UI will offer to move or delete the tasks | Safest default; no silent data loss |
+| **Subtask writes update the parent's counters in one transaction**, using `counterDelta` from the domain layer. Task delete also deletes its subtasks in batches of 400 | Progress rings need no read per subtask; counters can never drift from a single failed write |
+| **Counters and completion are computed in one place** (`applyStatus`, `counterDelta`) and used by both implementations | No duplicated rules |
+| **`RepositoryError` with 7 codes** is the only error the UI handles; Firestore errors are mapped (`permission-denied`, `unavailable`, `not-found`, `already-exists`, `invalid`) | UI code never depends on Firebase error shapes |
+| **Rules are a prototype with no authentication**, audited in [`firestore-rules-audit.md`](firestore-rules-audit.md): score 1/5 for public use, accepted for this scope. They enforce shape, types, enums, limits and paths, and forbid listing users. Recommended extra steps outside the repo: App Check and a budget alert | There is no identity to check; see ERD open point 4 |
+| **Rules syntax has not been machine-checked** | No emulator and no project. Verification steps are in the audit file |
+| **Jest can import Firebase's `Timestamp`, but not run a real Firestore.** `transformIgnorePatterns` now also transforms `firebase` / `@firebase`, and `@firebase/util`'s `postinstall.mjs` is stubbed | Firebase ships ES modules; mixing its ESM and CJS builds in Jest creates two app registries ("Service firestore is not available"). Real Firestore is exercised by the emulator suite and `db:smoke`, which run outside Jest's module system |
+| **`.firebaserc` points the CLI at the project** (`todo-e618b`); the project id is public, not a secret | `firebase deploy` needs no `--project` flag |
+| **`tsx` added as a dev dependency** for `npm run db:smoke` | Runs a TypeScript script with the project's `@/` aliases |
+| **User documents can be deleted by anyone** who knows the username | Needed for the smoke test's cleanup and for a future "delete my list"; equivalent to the access everyone already has |
+
 ### Open for later phases
 
 | Topic | Phase |

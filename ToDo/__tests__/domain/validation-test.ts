@@ -6,7 +6,10 @@ import {
   normalizeUsername,
   validateNewCategory,
   validateNewSubtask,
+  validateCategoryPatch,
   validateNewTask,
+  validateSubtaskPatch,
+  validateTaskPatch,
   validateUsername,
 } from '@/domain/validation';
 
@@ -124,6 +127,32 @@ describe('validateNewSubtask', () => {
         priority: 'Choose a priority.',
         dueAt: 'Pick a date and time.',
       },
+    });
+  });
+});
+
+describe('patch validators only judge the fields that are present', () => {
+  it('accepts an empty patch and valid partial patches', () => {
+    expect(validateTaskPatch({})).toEqual({ ok: true });
+    expect(validateTaskPatch({ name: 'Renamed', priority: 'urgent' })).toEqual({ ok: true });
+    expect(validateCategoryPatch({ color: '#00696b' })).toEqual({ ok: true });
+    expect(validateSubtaskPatch({ dueAt: minutesFromNow(30) })).toEqual({ ok: true });
+  });
+
+  it('reports only the bad patched fields', () => {
+    expect(validateTaskPatch({ name: ' ' })).toEqual({ ok: false, errors: { name: 'Enter a name.' } });
+    expect(validateCategoryPatch({ color: 'red' })).toEqual({ ok: false, errors: { color: 'Pick a colour.' } });
+    expect(validateSubtaskPatch({ priority: 'x' as never })).toEqual({
+      ok: false,
+      errors: { priority: 'Choose a priority.' },
+    });
+  });
+
+  it('allows clearing the start time with null and checks start against a patched due time', () => {
+    expect(validateTaskPatch({ startAt: null })).toEqual({ ok: true });
+    expect(validateTaskPatch({ startAt: minutesFromNow(90), dueAt: minutesFromNow(60) })).toMatchObject({
+      ok: false,
+      errors: { startAt: expect.any(String) },
     });
   });
 });

@@ -203,6 +203,8 @@ Layer rule: `app → components → hooks → repositories → services/firebase
 
 ## Phase 4 — Firebase setup and database handlers (repositories)
 
+> **Status: done 2026-10-18.** Repositories (Firestore and in-memory), prototype rules, smoke script. The same 29-case contract passes against the in-memory fake (`npm test`) and against the real project `todo-e618b` (`npm run test:firestore`); `npm run db:smoke` passes 14 checks; rules are deployed. Not run on an emulator. Decisions: `decisions.md` ("Phase 4"). Not yet committed.
+
 **How this serves the primary goal:** this is the persistence layer — without it nothing a user types survives a refresh.
 
 **What to implement:**
@@ -215,7 +217,7 @@ Layer rule: `app → components → hooks → repositories → services/firebase
    - `subtaskRepository`: `create`, `toggle`, `update`, `remove`, `list` — **each write updates the parent's `subtaskTotal`/`subtaskDone` in the same transaction/batch.**
    - Mapping functions Firestore document ⇄ domain type (Timestamp ⇄ Date) live next to each repository.
 4. `firestore.rules`: only the four paths in `ERD.md` match; validate field types, enums and size limits; everything else denied. State plainly in `docs/decisions.md` that without auth the rules cannot restrict by user.
-5. `firestore.indexes.json` for the combined queries (category + `dueAt`, status + `dueAt`).
+5. `firestore.indexes.json`: **empty by design.** Category and status lists use an equality filter and are sorted in code, so no composite index is needed (see `decisions.md`).
 6. Tests: preferred = Firestore emulator + `@firebase/rules-unit-testing` (verify Windows/Java setup first using the installed `firebase-firestore` skill). Fallback = in-memory fake of the repository interfaces, plus rules reviewed with the `firebase-security-rules-auditor` skill.
 
 **Documentation references:** Phase 0 (Firebase, Firestore rules rows); Firestore quickstart; Firestore "data model" and "query" docs; skills `firebase-firestore`, `firestore-rules-creation`, `firebase-security-rules-auditor`.

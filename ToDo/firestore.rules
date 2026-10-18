@@ -1,0 +1,197 @@
+rules_version = '2';
+
+// ===============================================================
+// PROTOTYPE RULES - NO AUTHENTICATION
+// ===============================================================
+// This app has no accounts: a list is opened by a unique username, which is a handle, not a credential.
+// These rules therefore CANNOT tell one visitor from another. Anyone who knows a username (and the
+// project's public web config) can read and change that user's data.
+// What the rules DO enforce: only the paths below exist, every document has the documented shape,
+// types, enum values and size limits, and the users collection cannot be listed (usernames cannot be
+// enumerated). Review and harden before sharing the app widely (see docs/decisions.md, Phase 4).
+//
+// Assumed data model (docs/ERD.md; limits mirror LIMITS in src/domain/validation.ts):
+//
+// users/{username}                       username: 3-20 chars [a-z0-9_] (also the document id)
+//   username: string (immutable, == document id)
+//   displayName: string, optional, <= 80
+//   createdAt: timestamp (immutable)
+//   lastActiveAt: timestamp
+//
+// users/{username}/categories/{categoryId}
+//   name: string 1-80, description: string <= 2000, color: "#rrggbb"
+//   createdAt (immutable), updatedAt: timestamp
+//
+// users/{username}/tasks/{taskId}
+//   categoryId: string (an existing category), name: string 1-80, description: string <= 2000
+//   priority: low | medium | high | urgent        status: pending | in_process | done
+//   startAt: timestamp, optional    dueAt: timestamp    completedAt: timestamp, optional
+//   subtaskTotal: int 0-500, subtaskDone: int 0..subtaskTotal
+//   createdAt (immutable), updatedAt: timestamp
+//
+// users/{username}/tasks/{taskId}/subtasks/{subtaskId}
+//   taskId: string (== parent id, immutable), name: string 1-80, description: string <= 2000
+//   priority, status as above, dueAt: timestamp, completedAt: timestamp, optional
+//   createdAt (immutable), updatedAt: timestamp
+//
+// There is no cascade delete in rules: the app deletes a task's subtasks together with the task.
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- Helpers ----------
+
+    function isValidUsername(username) {
+      return username.matches('^[a-z0-9_]{3,20}$');
+    }
+
+    function isValidId(id) {
+      return id.matches('^[A-Za-z0-9_-]{1,40}$');
+    }
+
+    function isText(value, minLen, maxLen) {
+      return value is string && value.size() >= minLen && value.size() <= maxLen;
+    }
+
+    function isPriority(value) {
+      return value in ['low', 'medium', 'high', 'urgent'];
+    }
+
+    function isStatus(value) {
+      return value in ['pending', 'in_process', 'done'];
+    }
+
+    function isHexColor(value) {
+      return value is string && value.matches('^#[0-9a-fA-F]{6}$');
+    }
+
+    function isOptionalTimestamp(data, field) {
+      return !(field in data) || data[field] is timestamp;
+    }
+
+    function userDoc(username) {
+      return /databases/$(database)/documents/users/$(username);
+    }
+
+    function categoryDoc(username, categoryId) {
+      return /databases/$(database)/documents/users/$(username)/categories/$(categoryId);
+    }
+
+    function taskDoc(username, taskId) {
+      return /databases/$(database)/documents/users/$(username)/tasks/$(taskId);
+    }
+
+    // ---------- Validators (used on BOTH create and update) ----------
+
+    function isValidUser(data, username) {
+      return data.keys().hasAll(['username', 'createdAt', 'lastActiveAt'])
+        && data.keys().hasOnly(['username', 'displayName', 'createdAt', 'lastActiveAt'])
+        && data.username == username
+        && (!('displayName' in data) || isText(data.displayName, 1, 80))
+        && data.createdAt is timestamp
+        && data.lastActiveAt is timestamp;
+    }
+
+    function isValidCategory(data) {
+      return data.keys().hasAll(['name', 'description', 'color', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'description', 'color', 'createdAt', 'updatedAt'])
+        && isText(data.name, 1, 80)
+        && isText(data.description, 0, 2000)
+        && isHexColor(data.color)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['categoryId', 'name', 'description', 'priority', 'status', 'dueAt',
+                                 'subtaskTotal', 'subtaskDone', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['categoryId', 'name', 'description', 'priority', 'status', 'startAt', 'dueAt',
+                                'completedAt', 'subtaskTotal', 'subtaskDone', 'createdAt', 'updatedAt'])
+        && data.categoryId is string && isValidId(data.categoryId)
+        && isText(data.name, 1, 80)
+        && isText(data.description, 0, 2000)
+        && isPriority(data.priority)
+        && isStatus(data.status)
+        && isOptionalTimestamp(data, 'startAt')
+        && data.dueAt is timestamp
+        && isOptionalTimestamp(data, 'completedAt')
+        && data.subtaskTotal is int && data.subtaskTotal >= 0 && data.subtaskTotal <= 500
+        && data.subtaskDone is int && data.subtaskDone >= 0 && data.subtaskDone <= data.subtaskTotal
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSubtask(data, taskId) {
+      return data.keys().hasAll(['taskId', 'name', 'description', 'priority', 'status', 'dueAt',
+                                 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['taskId', 'name', 'description', 'priority', 'status', 'dueAt',
+                                'completedAt', 'createdAt', 'updatedAt'])
+        && data.taskId == taskId
+        && isText(data.name, 1, 80)
+        && isText(data.description, 0, 2000)
+        && isPriority(data.priority)
+        && isStatus(data.status)
+        && data.dueAt is timestamp
+        && isOptionalTimestamp(data, 'completedAt')
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    // ---------- Collections ----------
+
+    // A user document can be read by id (sign-in checks it) but never listed.
+    match /users/{username} {
+      allow get: if isValidUsername(username);
+      allow list: if false;
+      allow create: if isValidUsername(username)
+        && isValidUser(request.resource.data, username);
+      allow update: if isValidUsername(username)
+        && isValidUser(request.resource.data, username)
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isValidUsername(username);
+
+      match /categories/{categoryId} {
+        // For list queries the document id is not bound, so ids are only checked on get.
+        allow get: if isValidUsername(username) && isValidId(categoryId);
+        allow list: if isValidUsername(username);
+        allow create: if isValidUsername(username) && isValidId(categoryId)
+          && exists(userDoc(username))
+          && isValidCategory(request.resource.data);
+        allow update: if isValidUsername(username) && isValidId(categoryId)
+          && isValidCategory(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt;
+        allow delete: if isValidUsername(username) && isValidId(categoryId);
+      }
+
+      match /tasks/{taskId} {
+        allow get: if isValidUsername(username) && isValidId(taskId);
+        allow list: if isValidUsername(username);
+        allow create: if isValidUsername(username) && isValidId(taskId)
+          && exists(userDoc(username))
+          && exists(categoryDoc(username, request.resource.data.categoryId))
+          && isValidTask(request.resource.data);
+        allow update: if isValidUsername(username) && isValidId(taskId)
+          && isValidTask(request.resource.data)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && (request.resource.data.categoryId == resource.data.categoryId
+              || exists(categoryDoc(username, request.resource.data.categoryId)));
+        allow delete: if isValidUsername(username) && isValidId(taskId);
+
+        match /subtasks/{subtaskId} {
+          allow get: if isValidUsername(username) && isValidId(taskId) && isValidId(subtaskId);
+          allow list: if isValidUsername(username) && isValidId(taskId);
+          allow create: if isValidUsername(username) && isValidId(taskId) && isValidId(subtaskId)
+            && exists(taskDoc(username, taskId))
+            && isValidSubtask(request.resource.data, taskId);
+          allow update: if isValidUsername(username) && isValidId(taskId) && isValidId(subtaskId)
+            && isValidSubtask(request.resource.data, taskId)
+            && request.resource.data.createdAt == resource.data.createdAt;
+          allow delete: if isValidUsername(username) && isValidId(taskId) && isValidId(subtaskId);
+        }
+      }
+    }
+
+    // Everything else is denied (default).
+  }
+}

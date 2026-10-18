@@ -5,7 +5,14 @@
 
 import { isPriorityKey } from '@/constants/priorities';
 import { isStatusKey } from '@/constants/statuses';
-import type { NewCategory, NewSubtask, NewTask } from '@/domain/types';
+import type {
+  CategoryPatch,
+  NewCategory,
+  NewSubtask,
+  NewTask,
+  SubtaskPatch,
+  TaskPatch,
+} from '@/domain/types';
 
 /** Keep in sync with firestore.rules. */
 export const LIMITS = {
@@ -82,6 +89,50 @@ export function validateNewSubtask(input: NewSubtask): Validation<NewSubtask> {
   const dueError = dateError(input.dueAt);
   if (dueError) errors.dueAt = dueError;
   return result(errors);
+}
+
+/** Placeholder values stand in for fields a patch leaves out; only fields present in the patch are reported. */
+const FAR_FUTURE = new Date(8_640_000_000_000_000);
+
+export function validateCategoryPatch(patch: CategoryPatch): Validation<CategoryPatch> {
+  const result = validateNewCategory({ name: 'x', description: '', color: '#000000', ...definedOnly(patch) });
+  return onlyPatchedFields(result, patch);
+}
+
+export function validateTaskPatch(patch: TaskPatch): Validation<TaskPatch> {
+  const { startAt, ...rest } = patch;
+  const result = validateNewTask({
+    categoryId: 'x',
+    name: 'x',
+    description: '',
+    priority: 'medium',
+    dueAt: FAR_FUTURE,
+    ...definedOnly(rest),
+    ...(startAt ? { startAt } : {}),
+  });
+  return onlyPatchedFields(result, patch);
+}
+
+export function validateSubtaskPatch(patch: SubtaskPatch): Validation<SubtaskPatch> {
+  const result = validateNewSubtask({
+    name: 'x',
+    description: '',
+    priority: 'medium',
+    dueAt: FAR_FUTURE,
+    ...definedOnly(patch),
+  });
+  return onlyPatchedFields(result, patch);
+}
+
+function definedOnly<T extends object>(value: T): Partial<T> {
+  return Object.fromEntries(Object.entries(value).filter(([, v]) => v !== undefined)) as Partial<T>;
+}
+
+function onlyPatchedFields<T extends object, P extends object>(result: Validation<T>, patch: P): Validation<P> {
+  if (result.ok) return { ok: true };
+  const present = new Set(Object.keys(definedOnly(patch)));
+  const errors = Object.fromEntries(Object.entries(result.errors).filter(([field]) => present.has(field)));
+  return Object.keys(errors).length === 0 ? { ok: true } : { ok: false, errors: errors as FieldErrors<P> };
 }
 
 function nameError(raw: string): string | undefined {
