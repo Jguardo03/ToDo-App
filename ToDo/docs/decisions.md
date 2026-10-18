@@ -84,6 +84,28 @@ Newest first inside each section. Each entry says what was decided, why, and whe
 | **`tsx` added as a dev dependency** for `npm run db:smoke` | Runs a TypeScript script with the project's `@/` aliases |
 | **User documents can be deleted by anyone** who knows the username | Needed for the smoke test's cleanup and for a future "delete my list"; equivalent to the access everyone already has |
 
+### Phase 5 — reusable components (2026-10-18)
+
+| Decision | Why |
+|---|---|
+| **Icons: `expo-symbols`' `SymbolView` through our own `Icon`** (`components/ui/icon.tsx`). One `ICONS` table maps each purpose (`add`, `clock`, `overdue`...) to the Material Symbols name from the mockups (web and Android) and an SF Symbol (iOS). No new icon package | `expo-symbols` 57 already depends on `@expo-google-fonts/material-symbols` and renders those names on web. Verified in the browser. `@expo/vector-icons` is documented as heading for deprecation |
+| **Icons are hidden from screen readers.** A button's meaning comes from its `label`; `IconButton` requires one | An icon alone has no text |
+| **Soft card style, not the hard-offset shadow.** Cards, inputs and the dock use `Shadow.card`; the mobile add-task mockup's 3px charcoal bottom edge is not reproduced | The updated desktop `add_task`, `add_subtask`, `home`, `calendar` mockups use soft shadows; the mobile add forms are the outliers |
+| **Radius scale follows the mockup HTML** (`rounded-xl` = 12px), already what `Radius.md` is | `DESIGN.md` front matter lists a different scale (xl = 24px) than the Tailwind config in the same mockups |
+| **Date-time input: browser `<input type="datetime-local">` on web** (`date-time-field.web.tsx`); phones use a typed "YYYY-MM-DD HH:mm" field | Web is the target. A native picker needs a package outside the web-first scope; add `@react-native-community/datetimepicker` later if phones matter |
+| **`ProgressRing` uses `react-native-svg`** (added with `npx expo install`) | Draws the arc on web and native without platform code |
+| **Category colour tint** = the category's `#rrggbb` plus an alpha byte (`withAlpha`) | Categories carry one user-chosen colour; the tinted pill and icon badge derive from it |
+| **No images on category cards.** A folder icon on a tinted tile replaces the mockup illustrations | The ERD has no image field |
+| **The mockup brand copy is not used:** "Create Mission", "Operational Calm", "Mission" become "New Task", "Add the details...", etc. | The product is a plain to-do list |
+| **Forms are pure:** they take data and callbacks (`categories`, `now`, `onSubmit`) and never call repositories or read the clock. They validate with `domain/validation` and emit `NewTask` / `NewSubtask` / `NewCategory` | Phase 7 wires them to the data layer; tests need no Firebase |
+| **A form's actions are rendered once:** header on desktop, bottom on phones. The mockup repeats Cancel/Save in a side card too | Duplicate buttons would confuse screen readers and tests; one set meets the same need |
+| **Inline subtasks in the task form inherit the task's priority** and start with the task's due time; they are edited fully in the subtask form | The mockup's inline subtask rows have no priority control |
+| **Quick add** (`QuickAddCard`): due end of today, medium priority, needs a name and a category | Owner-confirmed: "Fast Submit" stays disabled until a category is chosen |
+| **Dev gallery at `/__gallery` and `/__gallery/forms`**, redirecting to Home when `__DEV__` is false; sample data in `src/dev/gallery-data.ts` | To compare every component with the mockups. Routes beginning with `__` are bundled, but unreachable in production builds |
+| **`Button` and `IconButton` ignore a `style` injected by `<Link asChild>`** (their own props are applied last) | Otherwise a Link around a Button lost its styling |
+| **Jest mocks `expo-symbols`** (`config/jest/setup.ts`) | The native icon module does not exist in Jest; icons are decorative |
+| **Typed inputs expose an accessible name:** `TextField` / `TextArea` use their `label` as the accessible name unless one is given | Found by a test: spreading props after the label had erased it |
+
 ### Open for later phases
 
 | Topic | Phase |

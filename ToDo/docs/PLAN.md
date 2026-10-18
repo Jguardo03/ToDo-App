@@ -234,6 +234,8 @@ Layer rule: `app → components → hooks → repositories → services/firebase
 
 ## Phase 5 — Reusable component library (with a visual test page)
 
+> **Status: done 2026-10-18.** 20 components, `/__gallery` and `/__gallery/forms`, 62 new tests (184 in total); typecheck and lint clean; checked in the browser at 390 px and 1280 px. Decisions: `decisions.md` ("Phase 5"). Not yet committed.
+
 **How this serves the primary goal:** the cards, forms and chips are reused on every screen; building them once against the mockups gives the "looks like the mockups" result cheaply.
 
 **What to implement** (each component: typed props, theme tokens only, no data fetching):
@@ -244,7 +246,7 @@ Layer rule: `app → components → hooks → repositories → services/firebase
    - `SubtaskForm`: top "Parent task" card shows parent name, due date, category and a **short id** (first 6 characters of the Firestore id; the mockup's `TSK-0842` code has no ERD field); category chip is locked ("Inherited from parent"); due-date field shows a relative badge ("In 3 days") computed in `utils/dates.ts`.
    - No attachment control, no markdown toolbar (see Phase 0 conflicts).
    - Add `QuickAddCard` (Home desktop "Quick Execution"): text input + date / priority / category icon buttons + "Fast Submit". Submit stays disabled until a name **and** a category are chosen (category is required by the ERD; owner-confirmed 2026-10-18).
-4. Icons: decide and document the approach (Material Symbols names used in the mockups) after reading the Expo icons docs for SDK 57; do not assume `expo-symbols` works on web.
+4. Icons: **decided:** `expo-symbols` `SymbolView` behind our `Icon` component (Material Symbols on web and Android, SF Symbols on iOS); verified on web.
 5. A dev-only route `src/app/__gallery.tsx` rendering every component in every state (hidden in production builds).
 
 **Documentation references:** `ToDo_Mockup/*/code.html` for the exact structure of each component; `DESIGN.md` "Components" section; skill `building-native-ui`.

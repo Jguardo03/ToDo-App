@@ -131,3 +131,9 @@ export const Layout = {
   /** Mockup requires 48px touch targets. */
   minTouchTarget: 48,
 } as const;
+
+/** Soft shadows used by cards and the bottom dock (mockups: `shadow-sm` and the dock shadow). */
+export const Shadow = {
+  card: '0 1px 3px rgba(27, 27, 33, 0.08)',
+  raised: '0 4px 16px rgba(27, 27, 33, 0.08)',
+} as const;
