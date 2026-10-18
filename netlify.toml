@@ -9,6 +9,10 @@
 
 [build.environment]
   NODE_VERSION = "22"
+  # The Firebase web settings are public identifiers that Expo inlines into the client bundle on purpose (the
+  # Firestore rules protect the data, not these values). Netlify's secrets scan would otherwise fail the build
+  # when it finds them in the bundle or the repo. Scoped to these three keys; scanning stays on for everything else.
+  SECRETS_SCAN_OMIT_KEYS = "EXPO_PUBLIC_FIREBASE_API_KEY,EXPO_PUBLIC_FIREBASE_PROJECT_ID,EXPO_PUBLIC_FIREBASE_APP_ID"
 
 # Single-page app: every path serves index.html (also in ToDo/public/_redirects, which Expo copies into dist).
 [[redirects]]
