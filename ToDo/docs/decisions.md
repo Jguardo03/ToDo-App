@@ -166,6 +166,21 @@ Newest first inside each section. Each entry says what was decided, why, and whe
 | **Moving a task's due time earlier moves its later subtasks to the new time** (same batch in Firestore; earlier subtasks are untouched; moving later changes nothing). The edit form says so under the date | Blocking the edit would trap people; silently leaving invalid subtasks would break the rule. The change is announced in the form |
 | **Rule limits:** the rules check a subtask against its task when the subtask is written, but cannot check the other direction (a modified client could move a task earlier without moving its subtasks) | Rules cannot query a task's other documents. Accepted, same class as the other client-trust limits |
 
+### Phase 9 — Categories (2026-10-18)
+
+| Decision | Why |
+|---|---|
+| **Categories tab:** a header with the counts ("2 categories • 3 tasks"), a "New Category" card, then one card per category (colour stroke, folder tile, name, task count). Phones: 2 columns, search behind a magnifier button. Desktop: 3 columns, an always-visible filter box, and cards also show a progress bar and "x / y Done" | Matches `mobile_categories` and `categories`; the progress bar uses only data we store |
+| **Search matches name or description**, case-insensitive; an empty result says so | Mockup shows a filter box; description is cheap to include |
+| **Empty state "Organize Your Universe" with five suggested starters** (Design, Development, Coding, Meeting, Personal). **Tapping a starter creates that category at once**, with the next palette colour and no description | One tap to start; a wrong one is deleted from its page. The alternative (open the form pre-filled) was one more step |
+| **Create from the Categories tab uses the same form as the task form's "New" pill**, in a sheet. On failure the sheet stays open and the reason is shown | One component, two entry points |
+| **Category page (`category/[id]`):** name, description, task count, **Done ratio** and **Overdue** count, then the tasks, then "Add Task to Category" (opens the new-task form with that category chosen and returns here after saving) | Matches `mobile_category_registry`. The mockup's "Urgent: 3 overdue today" becomes a plain overdue count (derived) |
+| **Tasks on the category page: active ones first (soonest due), done ones after.** Ticks are optimistic | Active work first; same optimistic behaviour as elsewhere |
+| **Edit category:** name, description, colour in a sheet from the page's options menu | Reuses `CategoryForm` |
+| **Delete category is only offered when it has no tasks**; otherwise the options menu says "This category has N tasks. Move or delete them before deleting the category." Deleting asks first. The data layer still refuses (`category-in-use`) if the page was out of date | Prevents orphaned tasks; the earlier Phase 4 decision |
+| **No category images or "lists" counts, no desktop side drawer.** Cards use a folder icon on the category's tint, and "tasks" instead of "lists • tasks" | The ERD has no image or list entity; the drawer duplicates the category page |
+| **`category/[id]` is listed under the signed-in guard** | Same rule as every other screen |
+
 ### Open for later phases
 
 | Topic | Phase |

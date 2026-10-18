@@ -9,3 +9,11 @@ export const CATEGORY_COLORS = [
 ] as const;
 
 export const DEFAULT_CATEGORY_COLOR = CATEGORY_COLORS[0];
+
+/** One-tap categories offered on the empty Categories screen (mockup: "Suggested starters"). */
+export const CATEGORY_STARTERS = ['Design', 'Development', 'Coding', 'Meeting', 'Personal'] as const;
+
+/** The starter's colour: the palette in order, so each starter looks different. */
+export function starterColor(index: number): string {
+  return CATEGORY_COLORS[index % CATEGORY_COLORS.length];
+}

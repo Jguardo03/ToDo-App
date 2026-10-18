@@ -3,6 +3,7 @@ import TabsLayout from '@/app/(tabs)/_layout';
 import CalendarScreen from '@/app/(tabs)/calendar';
 import CategoriesScreen from '@/app/(tabs)/categories';
 import HomeScreen from '@/app/(tabs)/index';
+import CategoryScreen from '@/app/category/[id]';
 import StatusScreen from '@/app/status/[status]';
 import EditTaskScreen from '@/app/task/[id]/edit';
 import TaskScreen from '@/app/task/[id]/index';
@@ -23,4 +24,5 @@ export const appRoutes = {
   'task/[id]/subtask-new': NewSubtaskScreen,
   'task/[id]/subtask/[subtaskId]': EditSubtaskScreen,
   'status/[status]': StatusScreen,
+  'category/[id]': CategoryScreen,
 };

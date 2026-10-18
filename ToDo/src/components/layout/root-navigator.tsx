@@ -25,6 +25,7 @@ export function RootNavigator() {
         <Stack.Screen name="task/[id]/subtask-new" />
         <Stack.Screen name="task/[id]/subtask/[subtaskId]" />
         <Stack.Screen name="status/[status]" />
+        <Stack.Screen name="category/[id]" />
       </Stack.Protected>
     </Stack>
   );

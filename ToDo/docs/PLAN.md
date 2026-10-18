@@ -332,6 +332,8 @@ Layer rule: `app → components → hooks → repositories → services/firebase
 
 ## Phase 9 — Categories
 
+> **Status: done 2026-10-18.** Categories tab (grid, search, New Category sheet, empty state with starters), category page (numbers, tasks, add task, edit, delete when empty). 361 tests pass; typecheck and lint clean. Checked in the browser against the real Firebase project (empty state, starter tap, open category, add a task to it, delete withheld while it has a task), then the test user was deleted. Decisions: `decisions.md` ("Phase 9"). Not yet committed.
+
 **How this serves the primary goal:** categories are one of the three required screens and organise every task.
 
 **What to implement:**

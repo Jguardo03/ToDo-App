@@ -2,6 +2,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { Card } from '@/components/ui/card';
 import { Icon } from '@/components/ui/icon';
+import { ProgressBar } from '@/components/ui/progress-bar';
 import { ThemedText } from '@/components/themed-text';
 import { Radius, Spacing } from '@/constants/theme';
 import type { Category } from '@/domain/types';
@@ -10,12 +11,15 @@ import { withAlpha } from '@/utils/colors';
 type CategoryCardProps = {
   category: Pick<Category, 'name' | 'color'>;
   taskCount: number;
+  /** Done tasks out of `taskCount`. When given (and there are tasks), the card shows a progress bar. */
+  doneCount?: number;
   onPress?: () => void;
 };
 
-/** Tile in the Categories grid: colour stroke, icon badge, name and task count. */
-export function CategoryCard({ category, taskCount, onPress }: CategoryCardProps) {
+/** Tile in the Categories grid: colour stroke, icon badge, name and task count (mockups: categories). */
+export function CategoryCard({ category, taskCount, doneCount, onPress }: CategoryCardProps) {
   const tasks = `${taskCount} ${taskCount === 1 ? 'Task' : 'Tasks'}`;
+  const showProgress = doneCount !== undefined && taskCount > 0;
 
   return (
     <Card accent={category.color} onPress={onPress} accessibilityLabel={`${category.name}, ${tasks}`} style={styles.card}>
@@ -33,6 +37,14 @@ export function CategoryCard({ category, taskCount, onPress }: CategoryCardProps
         </View>
         <Icon name="forward" size={18} color="onSurfaceVariant" />
       </View>
+      {showProgress ? (
+        <View style={styles.progress}>
+          <ProgressBar value={(doneCount ?? 0) / taskCount} color={category.color} label={`${category.name} progress`} />
+          <ThemedText variant="labelXs" color="onSurfaceVariant" style={styles.plain}>
+            {`${doneCount} / ${taskCount} Done`}
+          </ThemedText>
+        </View>
+      ) : null}
     </Card>
   );
 }
@@ -59,5 +71,11 @@ const styles = StyleSheet.create({
   },
   text: {
     flex: 1,
+  },
+  progress: {
+    gap: Spacing.xs,
+  },
+  plain: {
+    textTransform: 'none',
   },
 });

@@ -4,6 +4,7 @@ import { useRepositories } from '@/context/repositories';
 import { useUsername } from '@/context/session';
 import type {
   Category,
+  CategoryPatch,
   NewCategory,
   NewSubtask,
   NewTaskDraft,
@@ -28,6 +29,9 @@ export type TaskActions = {
   setSubtaskStatus: (taskId: string, subtaskId: string, status: StatusKey) => Promise<void>;
   deleteSubtask: (taskId: string, subtaskId: string) => Promise<void>;
   createCategory: (input: NewCategory) => Promise<Category>;
+  updateCategory: (categoryId: string, patch: CategoryPatch) => Promise<void>;
+  /** Rejects with `category-in-use` while any task belongs to the category. */
+  deleteCategory: (categoryId: string) => Promise<void>;
 };
 
 /** Writes for the signed-in user. Screens call these; they never touch repositories directly. */
@@ -60,6 +64,8 @@ export function useTaskActions(): TaskActions {
       setSubtaskStatus: (taskId, subtaskId, status) => subtasks.setStatus(username, taskId, subtaskId, status),
       deleteSubtask: (taskId, subtaskId) => subtasks.remove(username, taskId, subtaskId),
       createCategory: (input) => categories.create(username, input),
+      updateCategory: (categoryId, patch) => categories.update(username, categoryId, patch),
+      deleteCategory: (categoryId) => categories.remove(username, categoryId),
     }),
     [tasks, subtasks, categories, username],
   );
