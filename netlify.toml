@@ -1,0 +1,17 @@
+# Netlify build for the ToDo web app. The app lives in the ToDo/ folder of this repository.
+# Set these three variables in Netlify (Site configuration > Environment variables), from ToDo/.env.local:
+#   EXPO_PUBLIC_FIREBASE_API_KEY, EXPO_PUBLIC_FIREBASE_PROJECT_ID, EXPO_PUBLIC_FIREBASE_APP_ID
+
+[build]
+  base = "ToDo"
+  command = "npx expo export --platform web"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Single-page app: every path serves index.html (also in ToDo/public/_redirects, which Expo copies into dist).
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
