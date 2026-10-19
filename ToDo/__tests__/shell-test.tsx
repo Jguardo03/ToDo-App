@@ -6,6 +6,8 @@ import { Dimensions } from 'react-native';
 import { appRoutes } from '../config/jest/app-routes';
 import { makeTestRoot } from '../config/jest/session-helpers';
 
+import { formatLongDate } from '@/utils/dates';
+
 
 const routes = {
   _layout: makeTestRoot({ initial: { username: 'rune_dev', recent: [] }, children: () => <Slot /> }),
@@ -42,7 +44,8 @@ describe('app shell', () => {
 
     fireEvent.press(screen.getByRole('tab', { name: 'Calendar' }));
     await waitFor(() => expect(screen).toHavePathname('/calendar'));
-    expect(screen.getByRole('header', { name: 'Calendar' })).toBeOnTheScreen();
+    // The Calendar's heading is the selected day, which opens on today.
+    expect(screen.getByRole('header', { name: formatLongDate(new Date()) })).toBeOnTheScreen();
 
     fireEvent.press(screen.getByRole('tab', { name: 'Categories' }));
     await waitFor(() => expect(screen).toHavePathname('/categories'));
@@ -65,7 +68,8 @@ describe('app shell', () => {
     setWindowWidth(1280);
     renderRouter(routes, { initialUrl: '/calendar' });
 
-    expect(screen.getByRole('header', { name: 'Calendar' })).toBeOnTheScreen();
+    // The Calendar's heading is the selected day, which opens on today.
+    expect(screen.getByRole('header', { name: formatLongDate(new Date()) })).toBeOnTheScreen();
     expect(screen.getByText('+ New Task')).toBeOnTheScreen();
     expect(screen.getByRole('tab', { name: 'Calendar', selected: true })).toBeOnTheScreen();
   });

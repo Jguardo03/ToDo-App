@@ -351,6 +351,8 @@ Layer rule: `app → components → hooks → repositories → services/firebase
 
 ## Phase 10 — Calendar
 
+> **Status: done 2026-10-18.** Week strip, day timeline, empty state, desktop month picker, category filter, Fast Book and add-subtask rows. 415 tests pass; typecheck and lint clean. Checked in the browser against the real Firebase project on a phone and a desktop width (tasks on the right days, 23:30 task, empty day, Schedule a Task and Fast Book pre-fill the day, add-subtask opens the subtask form, no nested-button errors), then the test user was deleted. Decisions: `decisions.md` ("Phase 10"). Not yet committed.
+
 **How this serves the primary goal:** Calendar is the third required screen and the only time-based view of the user's work.
 
 **What to implement:**

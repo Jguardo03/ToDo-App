@@ -108,3 +108,60 @@ export function formatLongDate(date: Date): string {
 export function formatTimeRange(start: Date | undefined, end: Date): string {
   return start ? `${formatTime(start)} - ${formatTime(end)}` : formatTime(end);
 }
+
+/** The Monday on or before `date`, at 00:00 local (weeks start on Monday, as in the mockups). */
+export function startOfWeek(date: Date): Date {
+  const sinceMonday = (date.getDay() + 6) % 7;
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - sinceMonday);
+}
+
+/** The seven local days of the week containing `date`, Monday first, each at 00:00. */
+export function weekDays(date: Date): Date[] {
+  const monday = startOfWeek(date);
+  return Array.from({ length: 7 }, (_, index) => addDays(monday, index));
+}
+
+/** ISO 8601 week number (the week with the year's first Thursday is week 1). */
+export function isoWeekNumber(date: Date): number {
+  const thursday = addDays(startOfWeek(date), 3);
+  const firstThursday = startOfWeek(new Date(thursday.getFullYear(), 0, 4));
+  return 1 + Math.round(daysBetween(addDays(firstThursday, 3), thursday) / 7);
+}
+
+/** "YYYY-MM-DD" of the local day: used as a map key and in the `?date=` address. */
+export function toDayKey(date: Date): string {
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/** First day of the month containing `date`, shifted by `months` (negative goes back). */
+export function addMonths(date: Date, months: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
+/** Whole weeks (Monday-first, 7 days each) covering the month of `date`, including the neighbouring days. */
+export function monthGrid(date: Date): Date[][] {
+  const first = new Date(date.getFullYear(), date.getMonth(), 1);
+  const last = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+  const start = startOfWeek(first);
+  const weeks = Math.ceil((daysBetween(start, last) + 1) / 7);
+  return Array.from({ length: weeks }, (_, week) => Array.from({ length: 7 }, (_, day) => addDays(start, week * 7 + day)));
+}
+
+/** "October 2026" */
+export function formatMonthYear(date: Date): string {
+  return `${MONTH_NAMES[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+/** "75 min", "2 h", "1 h 30 min" for the gap from `start` to `end`; undefined when `end` is not after `start`. */
+export function formatDuration(start: Date, end: Date): string | undefined {
+  const minutes = Math.round((end.getTime() - start.getTime()) / 60_000);
+  if (minutes <= 0) return undefined;
+  if (minutes < 90) return `${minutes} min`;
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  return rest === 0 ? `${hours} h` : `${hours} h ${rest} min`;
+}
+
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+export const WEEKDAY_INITIALS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'] as const;
+export const WEEKDAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;

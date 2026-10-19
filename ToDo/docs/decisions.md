@@ -181,6 +181,21 @@ Newest first inside each section. Each entry says what was decided, why, and whe
 | **No category images or "lists" counts, no desktop side drawer.** Cards use a folder icon on the category's tint, and "tasks" instead of "lists • tasks" | The ERD has no image or list entity; the drawer duplicates the category page |
 | **`category/[id]` is listed under the signed-in guard** | Same rule as every other screen |
 
+### Phase 10 — Calendar (2026-10-18)
+
+| Decision | Why |
+|---|---|
+| **Weeks start on Monday**, week number is the ISO 8601 number ("Week 42"). The mini month picker is Monday-first too, although the desktop mockup starts it on Sunday | The mockup's week strip is Monday-first; one rule across the screen is less confusing than two |
+| **Days are the device's local time zone.** A task belongs to the local day of its **due** time (the same rule as `TaskRepository.listByDay`), so one due at 23:30 stays on that day and one that starts the evening before shows on its due day. Day helpers use calendar arithmetic (`new Date(y, m, d + n)`), never "+ 24 hours", so a daylight-saving week still has seven distinct days | No UTC/local mix-ups; covered by tests across US and EU clock-change weeks |
+| **The Calendar reads the live list of all tasks that Home and Categories already use**, and filters it per day in a pure function (`domain/calendar.ts`), instead of one `listByDay` query per day. `listByDay` stays in the data layer | The week strip dots, the month dots and the category counts need several days at once, ticks and new tasks must appear live, and a second subscription would double the reads. A per-user list is small. This knowingly departs from the plan's "no client-side day filtering" warning; revisit if lists get large |
+| **Timeline is an ordered list, not a pixel-exact hour grid.** Each block has its start (or due) time on the left, plus its length ("75 min") when it has a start. Ordered by that time, then due time, then name | Matches the mockup's look without empty hour rows or overlapping boxes |
+| **Block content:** category and priority chips, title, first line of the description (Markdown marks removed), time range, "N subtasks" with a progress bar. Overdue ranges show in red. Done tasks are struck through. Tapping opens the task | As planned; no checkbox because the mockup has none |
+| **Header:** the day as a heading, "Week N", previous / next **week** arrows (the selected day moves by 7), a "Today" chip when away from today. Picking a day in the strip or month sets the day | Plan item 1; the arrows move a week because the strip shows a week |
+| **Desktop only:** month picker (dot under days with tasks; its arrows change only the month shown), "Filter Category" with checkboxes and **that day's** task count per category, "Fast Book", and an "Add new subtask…" row inside each block. On phones the filter is not applied, so a hidden category can never hide tasks on a phone | Per the mockups. Counts are for the selected day so the checkboxes explain what the timeline shows |
+| **"Fast Book" and "Schedule a Task" open the new-task form for the selected day** (`/task/new?date=YYYY-MM-DD`, due 17:00 that day) | Uses the form's existing `date` parameter |
+| **Not built:** bell, Cmd+K search, Day/Week/Month toggle, "Tokyo Sprint" and "Live" tags, "Google Meet" and "PR #" chips, stored lunch / stand-up rows, the "current time" line | Listed as skipped in the plan |
+| **The "Add new subtask…" row is a sibling of the task button, not inside it** | A button inside a button is invalid HTML; the browser logged a nesting error until this was split |
+
 ### Open for later phases
 
 | Topic | Phase |
